@@ -25,3 +25,7 @@ Imports:
     magrittr,
     tibble,
     patchwork
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

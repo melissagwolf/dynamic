@@ -1,0 +1,86 @@
+---
+title: "CFA Fit Index Cutoffs"
+author: "Melissa G Wolf & Daniel McNeish"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{CFA Fit Index Cutoffs}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+This package was created as supplemental material for *Dynamic Fit Index Cutoffs for Confirmatory Factor Analysis Models*, currently available as a [preprint](https://psyarxiv.com/).  The rationale for its existence can best be explained by reading the paper. 
+
+This package will compute fit index cutoffs for CFA models that are tailored to the user's model statement and sample size. This enables the user to properly test if their model is misspecified.  We define misspecification conventionally, in accordance with Hu & Bentler's popular (1999) criteria.  It will also output a graph that compares the tailored cutoffs with Hu & Bentler's fixed cutoffs.  
+
+Advances in computation and the accessibility of [RStudio's Shiny applications](https://shiny.rstudio.com/) negate the need to rely on fixed cutoff values. The new generation of fit index cutoffs are *dynamic* in that they change given the user's model statement, model type, and sample size.
+
+## Example
+
+**cfaFit** requires two pieces of information: the user's model statement and sample size.  The model statement should be written in lavaan compatible [model syntax](https://lavaan.ugent.be/tutorial/syntax1.html) using standardized loadings.
+
+The **lavaan** package contains a [CFA tutorial](https://lavaan.ugent.be/tutorial/cfa.html) based on a built-in dataset called HolzingerSwineford1939.  This data consists of a "mental ability" test with three factors: visual, textual, and speed. There are nine items; the first three load on visual, the second three load on textual, and the last three load on speed.  The sample size is 301.
+
+To simulate dynamic fit index cutoffs for this model, we need to get the standardized loadings from the CFA model.  To do this:
+
+```{r results='hide'}
+library(lavaan)
+model <- "visual  =~ x1 + x2 + x3 
+          textual =~ x4 + x5 + x6
+          speed   =~ x7 + x8 + x9"
+fit <- cfa(model,data=HolzingerSwineford1939)
+standardizedsolution(fit, type="std.all")
+```
+We pull the standardized loadings from the column `est.std`.  This gives us the following data generating model:
+
+```{r}
+dgm <- "visual  =~ .772*x1 + .424*x2 + .581*x3 
+        textual =~ .852*x4 + .855*x5 + .838*x6
+        speed   =~ .570*x7 + .723*x8 + .665*x9
+        visual ~~ .459*textual
+        visual ~~	.471*speed
+        textual ~~ .283*speed"
+```
+
+Which we can then use to simulate dynamic fit index cutoffs that are tailored to our model and sample size.
+
+```{r fig.height=3, fig.width=7}
+library(dynamic)
+cfaFit(dgm,301)
+```
+
+This tells us that the appropriate cutoff values are an SRMR of .040, RMSEA of .044, and a CFI of .984.  We can compare these with the fit statistics from the CFA we ran earlier:
+
+```{r}
+fitMeasures(fit, c("SRMR","rmsea.ci.lower", "RMSEA", "rmsea.ci.upper", "rmsea.pvalue", "CFI"))
+```
+
+Since the SRMR and RMSEA exceed the cutoff values, and the CFI falls below the cutoff value, we would conclude that this model did not fit the data well.  It is worth noting that this also would not have fit well by Hu & Bentler's standards, but the fit is even poorer when compared to the dynamic fit index cutoffs.
+
+## Shiny Application
+
+There is a Shiny counterpart to this package.  It can be found at [dynamicfit.app](https://dynamicfit.app/cfa).  The package and the app are identical and will produce the same results.
+
+## References
+
+To learn more about why you should use dynamic model fit index cutoffs instead of [Hu & Bentler's (1999)](https://psycnet.apa.org/record/1998-03102-001) fixed model fit index cutoff values, consider these articles:
+
+- Greiff, S., & Heene, M. [(2017)](https://doi.org/10.1027/1015-5759/a000450). Why psychological assessment needs to start worrying about model fit [Editorial]. *European Journal of Psychological Assessment, 33*(5), 313–317. 
+  - [Easy Access](https://www.researchgate.net/publication/320466182_Why_Psychological_Assessment_Needs_to_Start_Worrying_About_Model_Fit)
+- Hancock, G. R., & Mueller, R. O. [(2011)](https://doi.org/10.1177/0013164410384856). The reliability paradox in assessing structural relations within covariance structure models. *Educational and Psychological Measurement, 71*(2), 306–324.
+  - [Easy Access](https://pdfs.semanticscholar.org/53d6/c1690265df617dd33ebc94cdc76fbf97777d.pdf)
+- Heene, M., Hilbert, S., Draxler, C., Ziegler, M., & Bühner, M. [(2011)](https://doi.org/10.1037/a0024917). Masking misfit in confirmatory factor analysis by increasing unique variances: A cautionary note on the usefulness of cutoff values of fit indices. *Psychological Methods, 16*(3), 319–336. 
+  - [Easy Access](https://www.academia.edu/15139444/Masking_misfit_in_confirmatory_factor_analysis_by_increasing_unique_variances_A_cautionary_note_on_the_usefulness_of_cutoff_values_of_fit_indices)
+- Marsh, H. W., Hau, K. T., & Wen, Z. [(2004)](https://www.tandfonline.com/doi/abs/10.1207/s15328007sem1103_2). In Search of Golden Rules: Comment on Hypothesis-Testing Approaches to Setting Cutoff Values for Fit Indexes and Dangers in Overgeneralizing Hu and Bentler's (1999) Findings. *Structural Equation Modeling: A Multidisciplinary Journal, 11*(3), 320-341.
+  - [Easy Access](https://www.researchgate.net/publication/289963902_In_Search_of_Golden_Rules_Comment_on_Hypothesis-Testing_Approaches_to_Setting_Cutoff_Values_for_Fit_Indexes_and_Dangers_in_Overgeneralizing_Hu_and_Bentler's_1999_Findings)
+- McNeish, D., An, J. & Hancock, G. R. [(2018)](https://www.tandfonline.com/doi/abs/10.1080/00223891.2017.1281286). The Thorny Relation Between Measurement Quality and Fit Index Cutoffs in Latent Variable Models, *Journal of Personality Assessment, 100*(1), 43-52.
+  - [Easy Access](https://www.researchgate.net/publication/311536084_The_Thorny_Relation_between_Measurement_Quality_and_Fit_Index_Cut-Offs_in_Latent_Variable_Models)
