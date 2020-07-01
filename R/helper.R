@@ -1,10 +1,11 @@
 #' @importFrom dplyr filter select mutate full_join group_by add_tally
-#' ungroup slice arrange summarise count as_tibble pull
+#' ungroup slice arrange summarise count as_tibble pull recode
 #' @importFrom tidyr pivot_longer unite
 #' @importFrom lavaan lavaanify cfa fitMeasures
 #' @importFrom simstandard sim_standardized
 #' @import ggplot2
 #' @import magrittr
+#' @importFrom stats quantile
 #' @noRd
 
 #### Function for Number of Factors ####
@@ -229,7 +230,7 @@ multi_factor <- function(model){
   factcor1 <- factors %>%
     dplyr::mutate(type="Factor") %>%
     dplyr::full_join(lav_file, by = "lhs") %>%
-    dplyr::mutate(type=recode(type, .missing ="Error Correlation")) %>%
+    dplyr::mutate(type=dplyr::recode(type, .missing ="Error Correlation")) %>%
     dplyr::select(lhs,op,rhs,ustart,type) %>%
     dplyr::filter(op=="~~" & type=="Factor")
 
@@ -380,7 +381,8 @@ true_model_fit <- function(model,n){
     true_data <- simstandard::sim_standardized(m=true_dgm,n = n,
                                                latent = FALSE,
                                                errors = FALSE)
-    true_cfa <- lavaan::cfa(model = mod, data = true_data, std.lv=TRUE)
+    true_cfa <- base::withCallingHandlers(
+      lavaan::cfa(model = mod, data = true_data, std.lv=TRUE), warning=hide_ov)
     true_fits <- lavaan::fitMeasures(true_cfa, c("srmr","rmsea","cfi"))
     true_fit[i,] <- true_fits
   }

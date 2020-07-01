@@ -2,26 +2,26 @@
 % Please edit documentation in R/cfaFit.R
 \name{cfaFit}
 \alias{cfaFit}
-\title{Simulate dynamic fit cutoffs for single level confirmatory factor analysis models}
+\title{Fit index cutoffs for single level confirmatory factor analysis models}
 \usage{
 cfaFit(model, n)
 }
 \arguments{
-\item{model}{\code{\link{lavaan}} compatible model statement with standardized loadings.}
+\item{model}{Model statement written in \code{\link{lavaan}} \code{\link{model.syntax}} with standardized loadings.
+If using \code{\link{lavaan}}, you can get standardized loadings from \code{\link{standardizedSolution}}.}
 
 \item{n}{Sample size (number).}
 }
 \value{
-Model fit index cutoffs for the SRMR, RMSEA, and CFI.
+Fit index cutoffs for the SRMR, RMSEA, and CFI.
 }
 \description{
-Simulate dynamic fit cutoffs for single level confirmatory factor analysis models
+Use this command to generate fit index cutoffs that are tailored to your CFA model and sample size.
 }
 \examples{
 mod <- "F1 =~ .602*Y1 + .805*Y2 + .516*Y3 + .857*Y4
         F2 =~ .413*Y5 + -.631*Y6
         F1 ~~ .443*F2
         Y4 ~~ .301*Y5"
-\dontrun{
-cfaFit(mod,500)}
+cfaFit(mod,500)
 }

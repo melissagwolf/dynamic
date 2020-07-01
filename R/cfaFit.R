@@ -1,9 +1,15 @@
-#' Simulate dynamic fit cutoffs for single level confirmatory factor analysis models
+#' @title Fit index cutoffs for single level confirmatory factor analysis models
 #'
-#' @param model \code{\link{lavaan}} compatible model statement with standardized loadings.
+#' @description Use this command to generate fit index cutoffs that are tailored to your CFA model and sample size.
+#'
+#' @importFrom tibble column_to_rownames
+#' @import patchwork
+#'
+#' @param model Model statement written in \code{\link{lavaan}} \code{\link{model.syntax}} with standardized loadings.
+#'     If using \code{\link{lavaan}}, you can get standardized loadings from \code{\link{standardizedSolution}}.
 #' @param n Sample size (number).
 #'
-#' @return Model fit index cutoffs for the SRMR, RMSEA, and CFI.
+#' @return Fit index cutoffs for the SRMR, RMSEA, and CFI.
 #' @export
 #'
 #' @examples
@@ -11,12 +17,11 @@
 #'         F2 =~ .413*Y5 + -.631*Y6
 #'         F1 ~~ .443*F2
 #'         Y4 ~~ .301*Y5"
-#' \dontrun{
-#' cfaFit(mod,500)}
+#' cfaFit(mod,500)
 cfaFit <- function(model,n){
 
   if (unstandardized(model)>0){
-    stop("DF Error: Your model has loadings greater than or equal to 1 (an impossible value). Please use standardized loadings.")
+    stop("dynamic Error: Your model has loadings greater than or equal to 1 (an impossible value). Please use standardized loadings.")
   }
 
   results <- dynamic_fit(model,n)
@@ -88,6 +93,7 @@ cfaFit <- function(model,n){
   SRMR_plot <- plot %>%
     ggplot(aes(x=SRMR,fill=Model))+
     geom_histogram(position="identity",
+                   bins = 30,
                    alpha=.5)+
     scale_fill_manual(values=c("#E9798C","#66C2F5"))+
     geom_vline(aes(xintercept=misspec_sum$SRMR_M[1],
@@ -116,6 +122,7 @@ cfaFit <- function(model,n){
   RMSEA_plot <- plot %>%
     ggplot(aes(x=RMSEA,fill=Model))+
     geom_histogram(position="identity",
+                   bins = 30,
                    alpha=.5)+
     scale_fill_manual(values=c("#E9798C","#66C2F5"))+
     geom_vline(aes(xintercept=misspec_sum$RMSEA_M[1],
@@ -144,6 +151,7 @@ cfaFit <- function(model,n){
   CFI_plot <- plot %>%
     ggplot(aes(x=CFI,fill=Model))+
     geom_histogram(position="identity",
+                   bins = 30,
                    alpha=.5)+
     scale_fill_manual(values=c("#E9798C","#66C2F5"))+
     geom_vline(aes(xintercept=misspec_sum$CFI_M[1],
@@ -169,8 +177,11 @@ cfaFit <- function(model,n){
           legend.title = element_blank(),
           legend.box = "vertical")
 
-  Plot_Final <- base::suppressMessages(lemon::grid_arrange_shared_legend(SRMR_plot, RMSEA_plot, CFI_plot,
-                                                                         ncol=3,nrow=1))
+  #Plot_Final <- base::suppressMessages(lemon::grid_arrange_shared_legend(SRMR_plot, RMSEA_plot, CFI_plot,
+                                                                         #ncol=3,nrow=1))
+  Plot_Final <- SRMR_plot + RMSEA_plot + CFI_plot +
+    patchwork::plot_layout(guides = "collect") & theme(legend.position = 'bottom')
 
   return(list(Table_Final, Plot_Final))
 }
+
