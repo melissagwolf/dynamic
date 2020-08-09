@@ -332,14 +332,14 @@ misspecified_model_fit <- function(model,n){
   misspec_dgm <- Misspecified_DGM(model)
 
   #Create empty df to put fit stats in
-  misspec_fit <- data.frame(matrix(nrow=50,ncol=3))
+  misspec_fit <- data.frame(matrix(nrow=500,ncol=3))
 
   #Use max sample size of 10000
   n <- min(n,10000)
 
   #Simulate data through loop 500 times
   set.seed(649364)
-  for (i in 1:50){
+  for (i in 1:500){
     misspec_data <- simstandard::sim_standardized(m=misspec_dgm,n = n,
                                                   latent = FALSE,
                                                   errors = FALSE)
@@ -370,14 +370,14 @@ true_model_fit <- function(model,n){
   true_dgm <- model
 
   #Create empty df to put fit stats in
-  true_fit <- data.frame(matrix(nrow=50,ncol=3))
+  true_fit <- data.frame(matrix(nrow=500,ncol=3))
 
   #Use max sample size of 10000
   n <- min(n,10000)
 
   #Simulate data through loop 500 times
   set.seed(326267)
-  for (i in 1:50){
+  for (i in 1:500){
     true_data <- simstandard::sim_standardized(m=true_dgm,n = n,
                                                latent = FALSE,
                                                errors = FALSE)
