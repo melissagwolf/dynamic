@@ -2,7 +2,7 @@
 % Please edit documentation in R/cfaFit.R
 \name{cfaFit}
 \alias{cfaFit}
-\title{Fit index cutoffs for single level confirmatory factor analysis models}
+\title{Deprecated: Fit index cutoffs for single level confirmatory factor analysis models}
 \usage{
 cfaFit(model, n)
 }
@@ -16,7 +16,9 @@ If using \code{\link{lavaan}}, you can get standardized loadings from \code{\lin
 Fit index cutoffs for the SRMR, RMSEA, and CFI.
 }
 \description{
-Use this command to generate fit index cutoffs that are tailored to your CFA model and sample size.
+Deprecated. If you want to replicate the cfaFit cutoffs for multi-factor models, use the function \code{\link{cfaHB}}.
+The first level will be identical to the results from cfaFit. The cutoffs for one-factor models from cfaFit cannot be
+replicated in other functions. Use \code{\link{cfaOne}} for one-factor CFA models.
 }
 \examples{
 mod <- "F1 =~ .602*Y1 + .805*Y2 + .516*Y3 + .857*Y4

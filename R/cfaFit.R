@@ -1,6 +1,8 @@
-#' @title Fit index cutoffs for single level confirmatory factor analysis models
+#' @title Deprecated: Fit index cutoffs for single level confirmatory factor analysis models
 #'
-#' @description Use this command to generate fit index cutoffs that are tailored to your CFA model and sample size.
+#' @description Deprecated. If you want to replicate the cfaFit cutoffs for multi-factor models, use the function \code{\link{cfaHB}}.
+#' The first level will be identical to the results from cfaFit. The cutoffs for one-factor models from cfaFit cannot be
+#' replicated in other functions. Use \code{\link{cfaOne}} for one-factor CFA models.
 #'
 #' @importFrom tibble column_to_rownames
 #' @import patchwork
@@ -23,6 +25,10 @@ cfaFit <- function(model,n){
   if (unstandardized(model)>0){
     stop("dynamic Error: Your model has loadings greater than or equal to 1 (an impossible value). Please use standardized loadings.")
   }
+
+  .Deprecated(msg="cfaFit is deprecated and will be defunct in the next version of dynamic.
+
+  If you want to replicate the cfaFit cutoffs for multi-factor models, use the function cfaHB.  The first level will be identical to the results from cfaFit. The cutoffs for one-factor models from cfaFit cannot be replicated in other functions. Use cfaOne for one-factor CFA models.")
 
   results <- dynamic_fit(model,n)
 

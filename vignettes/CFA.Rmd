@@ -1,15 +1,15 @@
 ---
-title: "CFA Fit Index Cutoffs"
+title: "Dynamic Fit Index (DFI) Cutoffs for CFA Models"
 author: "Melissa G Wolf & Daniel McNeish"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{CFA Fit Index Cutoffs}
+  %\VignetteIndexEntry{Dynamic Fit Index (DFI) Cutoffs for CFA Models}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r, include = FALSE, message=FALSE, warning=FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -18,53 +18,53 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-This package was created as supplemental material for *Dynamic Fit Index Cutoffs for Confirmatory Factor Analysis Models*, currently available as a [preprint](https://psyarxiv.com/).  The rationale for its existence can best be explained by reading the paper. 
+This package was created as supplemental material for *Dynamic Fit Index Cutoffs for Confirmatory Factor Analysis Models*, currently available as a [preprint](https://psyarxiv.com/v8yru). This package computes fit index cutoffs for CFA models that are tailored to the user's model statement and sample size. This enables the user to estimate the extent of misspecification(s) in their particular model.  
 
-This package will compute fit index cutoffs for CFA models that are tailored to the user's model statement and sample size. This enables the user to properly test if their model is misspecified.  We define misspecification conventionally, in accordance with Hu & Bentler's popular (1999) criteria.  It will also output a graph that compares the tailored cutoffs with Hu & Bentler's fixed cutoffs.  
+- The misspecifications for the multi-factor CFA model, `cfaHB`, are defined conventionally in line with Hu & Bentler's (1999) approach to misspecification.  The DFI cutoff approach expands upon Hu & Bentler's method to include multiple levels of misspecification.
+
+- The misspecifications for the one-factor CFA model, `cfaOne`, are standardized to account for the number of items in the model.  There are up to three levels of misspecification for DFI cutoffs for one-factor CFAs, each increasing in severity (such that a Level-3 misspecification is the most misspecified model).
 
 Advances in computation and the accessibility of [RStudio's Shiny applications](https://shiny.rstudio.com/) negate the need to rely on fixed cutoff values. The new generation of fit index cutoffs are *dynamic* in that they change given the user's model statement, model type, and sample size.
 
-## Example
+## Example with Lavaan (string=FALSE)
 
-**cfaFit** requires two pieces of information: the user's model statement and sample size.  The model statement should be written in lavaan compatible [model syntax](https://lavaan.ugent.be/tutorial/syntax1.html) using standardized loadings.
+**cfaOne** and **cfaHB** each require two pieces of information: the user's model statement and sample size.  Both functions can read in this information from a `lavaan` object.  The default argument for each function is the `lavaan` object, which corresponds to the default for the string argument (`string=FALSE`).  We will use the `oneHB` function as an example here.  
 
-The **lavaan** package contains a [CFA tutorial](https://lavaan.ugent.be/tutorial/cfa.html) based on a built-in dataset called HolzingerSwineford1939.  This data consists of a "mental ability" test with three factors: visual, textual, and speed. There are nine items; the first three load on visual, the second three load on textual, and the last three load on speed.  The sample size is 301.
+For this example, we will use the `HolzingerSwineford1939` dataset that is built into the `lavaan`package.  This is a multi-factor CFA model (click [here](https://lavaan.ugent.be/tutorial/cfa.html) for a `lavaan` CFA tutorial.  This data consists of a "mental ability" test with three factors: visual, textual, and speed. There are nine items; the first three load on visual, the second three load on textual, and the last three load on speed.  The sample size is 301.
 
-To simulate dynamic fit index cutoffs for this model, we need to get the standardized loadings from the CFA model.  To do this:
+The user would begin by loading the dataset and running the three-factor CFA model:
 
-```{r results='hide'}
+```{r message=FALSE, warning=FALSE}
 library(lavaan)
-model <- "visual  =~ x1 + x2 + x3 
-          textual =~ x4 + x5 + x6
-          speed   =~ x7 + x8 + x9"
-fit <- cfa(model,data=HolzingerSwineford1939)
-standardizedsolution(fit, type="std.all")
-```
-We pull the standardized loadings from the column `est.std`.  This gives us the following data generating model:
-
-```{r}
-dgm <- "visual  =~ .772*x1 + .424*x2 + .581*x3 
-        textual =~ .852*x4 + .855*x5 + .838*x6
-        speed   =~ .570*x7 + .723*x8 + .665*x9
-        visual ~~ .459*textual
-        visual ~~	.471*speed
-        textual ~~ .283*speed"
+dat <- lavaan::HolzingerSwineford1939
+lavmod <- "visual  =~ x1 + x2 + x3
+           textual =~ x4 + x5 + x6
+           speed   =~ x7 + x8 + x9"
+fit <- lavaan::cfa(model=lavmod,data=dat)
 ```
 
-Which we can then use to simulate dynamic fit index cutoffs that are tailored to our model and sample size.
+The `lavaan` object, `fit`, would then be used as the argument for `cfaHB` (since this is a multi-factor model).  This will run a simulation with 500 replications to compute the DFI cutoffs tailored to this specific model, and return two levels of misspecifications for the SRMR, RMSEA, and CFI.  It will also include the magnitude of each missing cross-loading from the data generating model, to give the user an idea of the severity of the misspecification.  Because we requested the plots with `plot=TRUE`, there will be two plots with distributions of fit indices - one for each level of misspecification.  
+
+```{r fig.height=3, fig.width=7, message=FALSE, warning=FALSE}
+library(dynamic)
+dynamic::cfaHB(fit, plot = TRUE)
+```
+
+The SRMR for this model was .065, while the RMSEA was .092 and the CFI was .931.  The SRMR and RMSEA exceed the Level-1 and Level-2 cutoff values, and the CFI falls below the Level-1 and Level-2 cutoff values.  This means that the fit for this model is equivalent to *at least* two missing cross-loadings in the data generating model, one with a magnitude of .424 and the second with a magnitude of .570.  This model would not have fit well by Hu & Bentler's traditional cutoffs (SRMR < .08, RMSEA < .06, CFI > .95), but the fit is even poorer when compared to the DFI cutoffs tailored to the user's model.
+
+## Example with manual input (string=TRUE)
+
+Each function can also accommodate those that did not analyze their CFA models using `lavaan`.  This can be done by triggering `string=TRUE`, which will tell the function to expect two arguments (model statement and sample size).  For users that want to manually input their model statements, they should be written in lavaan compatible [model syntax](https://lavaan.ugent.be/tutorial/syntax1.html) using **standardized** loadings.  The second argument will be the user's manually entered sample size (this is only necessary for users who manually input their model statement). We will use the `oneCFA` function as an example here.
+
+Again, we will rely on the `HolzingerSwineford1939` dataset that is built into the `lavaan`package.  This time, we will pretend that the hypothesized model is a one-factor model with 6 items.  Because we did not request any plots, none will appear.
 
 ```{r fig.height=3, fig.width=7}
-library(dynamic)
-cfaFit(dgm,301)
+manmod <- "visualtextual =~ .419*x1 + .212*x2 + .203*x3 + .852*x4 + .847*x5 + .840*x6"
+n <- 301
+dynamic::cfaOne(model=manmod,n=n,string=TRUE)
 ```
 
-This tells us that the appropriate cutoff values are an SRMR of .040, RMSEA of .044, and a CFI of .984.  We can compare these with the fit statistics from the CFA we ran earlier:
-
-```{r}
-fitMeasures(fit, c("SRMR","rmsea.ci.lower", "RMSEA", "rmsea.ci.upper", "rmsea.pvalue", "CFI"))
-```
-
-Since the SRMR and RMSEA exceed the cutoff values, and the CFI falls below the cutoff value, we would conclude that this model did not fit the data well.  It is worth noting that this also would not have fit well by Hu & Bentler's standards, but the fit is even poorer when compared to the dynamic fit index cutoffs.
+The SRMR for this model was .114, while the RMSEA was .187 and the CFI was .856.  The SRMR and RMSEA exceed the Level-1, Level-2, and Level-3 cutoff values, and the CFI falls below the Level-1, Level-2 and Level-3 cutoff values.  This means that the fit of this model is equivalent to *at least* all of the items having one missing correlation with another item (at a magnitude of .3), implying that the hypothesized model may not fit the data.  It is worth noting that this model also would not have fit well by Hu & Bentler's traditional cutoffs (SRMR < .08, RMSEA < .06, CFI > .95).
 
 ## Shiny Application
 
@@ -72,15 +72,19 @@ There is a Shiny counterpart to this package.  It can be found at [dynamicfit.ap
 
 ## References
 
-To learn more about why you should use dynamic model fit index cutoffs instead of [Hu & Bentler's (1999)](https://psycnet.apa.org/record/1998-03102-001) fixed model fit index cutoff values, consider these articles:
+To learn more about why you should use dynamic model fit index cutoffs instead of [Hu & Bentler's (1999)](https://psycnet.apa.org/record/1998-03102-001){target="_parent"} fixed model fit index cutoff values, consider these articles:
 
-- Greiff, S., & Heene, M. [(2017)](https://doi.org/10.1027/1015-5759/a000450). Why psychological assessment needs to start worrying about model fit [Editorial]. *European Journal of Psychological Assessment, 33*(5), 313–317. 
-  - [Easy Access](https://www.researchgate.net/publication/320466182_Why_Psychological_Assessment_Needs_to_Start_Worrying_About_Model_Fit)
-- Hancock, G. R., & Mueller, R. O. [(2011)](https://doi.org/10.1177/0013164410384856). The reliability paradox in assessing structural relations within covariance structure models. *Educational and Psychological Measurement, 71*(2), 306–324.
-  - [Easy Access](https://pdfs.semanticscholar.org/53d6/c1690265df617dd33ebc94cdc76fbf97777d.pdf)
-- Heene, M., Hilbert, S., Draxler, C., Ziegler, M., & Bühner, M. [(2011)](https://doi.org/10.1037/a0024917). Masking misfit in confirmatory factor analysis by increasing unique variances: A cautionary note on the usefulness of cutoff values of fit indices. *Psychological Methods, 16*(3), 319–336. 
-  - [Easy Access](https://www.academia.edu/15139444/Masking_misfit_in_confirmatory_factor_analysis_by_increasing_unique_variances_A_cautionary_note_on_the_usefulness_of_cutoff_values_of_fit_indices)
-- Marsh, H. W., Hau, K. T., & Wen, Z. [(2004)](https://www.tandfonline.com/doi/abs/10.1207/s15328007sem1103_2). In Search of Golden Rules: Comment on Hypothesis-Testing Approaches to Setting Cutoff Values for Fit Indexes and Dangers in Overgeneralizing Hu and Bentler's (1999) Findings. *Structural Equation Modeling: A Multidisciplinary Journal, 11*(3), 320-341.
-  - [Easy Access](https://www.researchgate.net/publication/289963902_In_Search_of_Golden_Rules_Comment_on_Hypothesis-Testing_Approaches_to_Setting_Cutoff_Values_for_Fit_Indexes_and_Dangers_in_Overgeneralizing_Hu_and_Bentler's_1999_Findings)
-- McNeish, D., An, J. & Hancock, G. R. [(2018)](https://www.tandfonline.com/doi/abs/10.1080/00223891.2017.1281286). The Thorny Relation Between Measurement Quality and Fit Index Cutoffs in Latent Variable Models, *Journal of Personality Assessment, 100*(1), 43-52.
-  - [Easy Access](https://www.researchgate.net/publication/311536084_The_Thorny_Relation_between_Measurement_Quality_and_Fit_Index_Cut-Offs_in_Latent_Variable_Models)
+- Greiff, S., & Heene, M. [(2017)](https://doi.org/10.1027/1015-5759/a000450){target="_parent"}. Why psychological assessment needs to start worrying about model fit [Editorial]. *European Journal of Psychological Assessment, 33*(5), 313–317. 
+- Heene, M., Hilbert, S., Draxler, C., Ziegler, M., & Bühner, M. [(2011)](https://doi.org/10.1037/a0024917){target="_parent"}. Masking misfit in confirmatory factor analysis by increasing unique variances: A cautionary note on the usefulness of cutoff values of fit indices. *Psychological Methods, 16*(3), 319–336. 
+- Marsh, H. W., Hau, K. T., & Wen, Z. [(2004)](https://www.researchgate.net/publication/289963902_In_Search_of_Golden_Rules_Comment_on_Hypothesis-Testing_Approaches_to_Setting_Cutoff_Values_for_Fit_Indexes_and_Dangers_in_Overgeneralizing_Hu_and_Bentler's_1999_Findings){target="_parent"}. In Search of Golden Rules: Comment on Hypothesis-Testing Approaches to Setting Cutoff Values for Fit Indexes and Dangers in Overgeneralizing Hu and Bentler's (1999) Findings. *Structural Equation Modeling: A Multidisciplinary Journal, 11*(3), 320-341.
+- McNeish, D., An, J. & Hancock, G. R. [(2018)](https://www.researchgate.net/publication/311536084_The_Thorny_Relation_between_Measurement_Quality_and_Fit_Index_Cut-Offs_in_Latent_Variable_Models){target="_parent"}. The Thorny Relation Between Measurement Quality and Fit Index Cutoffs in Latent Variable Models. *Journal of Personality Assessment, 100*(1), 43-52.
+- Millsap, R. E. [(2007)](https://www.sciencedirect.com/science/article/abs/pii/S0191886906003862){target="_parent"}. Structural equation modeling made difficult. *Personality and Individual Differences, 42*, 875-881.
+- Muliak, S. [(2007)](https://psycnet.apa.org/record/2007-02474-010){target="_parent"}. There is a place for approximate fit in structural equation modelling. *Personality and Individual Differences, 42*(5), 883–891.
+- Shi, D., Lee, T., & Maydeu-Olivares, A. [(2019)](https://www.researchgate.net/publication/326077335_Understanding_the_Model_Size_Effect_on_SEM_Fit_Indices){target="_parent"}. Understanding the model size effect on SEM fit indices. *Educational and Psychological Measurement, 79*(2), 310-334.
+- Shi, D., & Maydeu-Olivares, A. [(2020)](https://journals.sagepub.com/doi/10.1177/0013164419885164?icid=int.sj-abstract.citing-articles.1){target="_parent"}. The Effect of Estimation Methods on SEM Fit Indices. *Educational and Psychological Measurement, 80*(3), 421-445.
+  
+## This package relies on the following packages:
+
+- [lavaan](http://www.jstatsoft.org/v48/i02/){target="_parent"}. Rosseel, Y. (2012). lavaan: An R Package for Structural Equation Modeling. Journal of Statistical Software, 48(2), 1-36.
+- [simstandard](https://CRAN.R-project.org/package=simstandard){target="_parent"}. Schneider, W. J. (2019). simstandard: Generate Standardized Data. R package version 0.3.0. 
+- [tidyverse](https://doi.org/10.21105/joss.01686){target="_parent"}. Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686.

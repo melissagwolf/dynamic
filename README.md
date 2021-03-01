@@ -32,9 +32,16 @@ devtools::install_github("melissagwolf/dynamic")
 
 ``` r
 library(dynamic)
-mod <- "F1 =~ .602*Y1 + .805*Y2 + .516*Y3 + .857*Y4
-        F2 =~ .413*Y5 + -.631*Y6
-        F1 ~~ .443*F2
-        Y4 ~~ .301*Y5"
-cfaFit(mod,500)
+
+#Lavaan object example (string=FALSE)
+dat <- lavaan::HolzingerSwineford1939
+lavmod <- "F1 =~ x1 + x2 + x3
+          F2 =~ x4 + x5 + x6
+          F3 =~ x7 + x8 + x9"
+fit <- lavaan::cfa(lavmod,dat)
+cfaHB(fit)
+
+#Manual entry example (string=TRUE)
+manmod <- "F1 =~ .602*Y1 + .805*Y2 + .857*Y3 + .631*Y4 + .345*Y5 + .646*Y6"
+cfaOne(manmod,500,string=TRUE)
 ```
