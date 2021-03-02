@@ -12,8 +12,8 @@ models that are tailored to the user’s model statement, model type, and
 sample size.
 
 This is the counterpart of the Shiny Application,
-[dynamicfit.app](https://dynamicfit.app/cfa). The Shiny app and the R
-package will give you the same results. If you are comfortable with R,
+[dynamicfit.app](https://dynamicfit.app/connect/). The Shiny app and the
+R package will give you the same results. If you are comfortable with R,
 consider using the package during high traffic times to reduce server
 burden.
 

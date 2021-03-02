@@ -59,6 +59,16 @@ equivTest <- function(n,T_ml=NULL,df=NULL,T_mli=NULL,p=NULL,string=FALSE,plot=FA
     T_mli=T_mli
     n=n
   }else{
+    #Use this to rewrite error message for when someone forgot to use string=TRUE
+    #But entered in model statement and sample size
+    #This is hacky but works, although traceback might confuse people
+    tryCatch(T_ml <- equiv_T_ml(n),
+             error=function(err){
+               if (grepl("trying to get slot", err$message)) {
+                 stop("Did you forget to use string=TRUE?")
+               }
+             })
+
     #Use these functions to convert to string (input is a lavaan object)
     #Probably what we should expect for people using R
     #need 'n' last because otherwise model will overwrite

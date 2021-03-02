@@ -49,6 +49,16 @@ cfaHB <- function(model,n=NULL,plot=FALSE,string=FALSE){
     model=model
     n=n
   }else{
+    #Use this to rewrite error message for when someone forgot to use string=TRUE
+    #But entered in model statement and sample size
+    #This is hacky but works, although traceback might confuse people
+    tryCatch(n <- cfa_n(model),
+             error=function(err){
+               if (grepl("trying to get slot", err$message)) {
+                 stop("Did you forget to use string=TRUE?")
+               }
+             })
+
     #Use these functions to convert to string (input is a lavaan object)
     #Probably what we should expect for people using R
     #need 'n' first because otherwise model will overwrite
