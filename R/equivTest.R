@@ -62,6 +62,7 @@ equivTest <- function(n,T_ml=NULL,df=NULL,T_mli=NULL,p=NULL,manual=FALSE,plot=FA
     #Use this to rewrite error message for when someone forgot to use manual=TRUE
     #But entered in model statement and sample size
     #This is hacky but works, although traceback might confuse people
+    #https://community.rstudio.com/t/create-custom-error-messages/39058/4
     tryCatch(equiv_T_ml(n),
              error=function(err){
                if (grepl("trying to get slot", err)) {

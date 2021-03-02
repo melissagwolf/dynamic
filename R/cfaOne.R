@@ -47,6 +47,7 @@ cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE){
     #Use this to rewrite error message for when someone forgot to use manual=TRUE
     #But entered in model statement and sample size
     #This is hacky but works, although traceback might confuse people
+    #https://community.rstudio.com/t/create-custom-error-messages/39058/4
     tryCatch(cfa_n(model),
              error=function(err){
                if (grepl("trying to get slot", err)) {

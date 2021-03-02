@@ -52,6 +52,7 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE){
   }else{
     #Use this to rewrite error message for when someone forgot to use manual=TRUE
     #But entered in model statement and sample size
+    #https://community.rstudio.com/t/create-custom-error-messages/39058/4
     #This is hacky but works, although traceback might confuse people
     tryCatch(cfa_n(model),
              error=function(err){
