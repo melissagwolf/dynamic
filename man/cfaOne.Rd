@@ -5,7 +5,7 @@
 \alias{print.cfaOne}
 \title{Dynamic fit index (DFI) cutoffs for one-factor CFA models}
 \usage{
-cfaOne(model, n = NULL, plot = FALSE, string = FALSE)
+cfaOne(model, n = NULL, plot = FALSE, manual = FALSE)
 
 \method{print}{cfaOne}(x, ...)
 }
@@ -18,7 +18,7 @@ Otherwise, enter your sample size (numeric).}
 
 \item{plot}{Displays distributions of fit indices for each level of misspecification.}
 
-\item{string}{If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
+\item{manual}{If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
 If you manually entered standardized loadings and sample size, set this to TRUE.}
 
 \item{x}{cfaOne object}
@@ -36,15 +36,15 @@ The function can also accommodate manual entry of the model statement and sample
 The app-based version of this function can be found at \href{https://dynamicfit.app/}{dynamicfit.app}.
 }
 \examples{
-#Lavaan object example (string=FALSE)
+#Lavaan object example (manual=FALSE)
 dat <- lavaan::HolzingerSwineford1939
 lavmod <- "F1 =~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9"
 fit <- lavaan::cfa(lavmod,dat)
 cfaOne(fit)
 
-#Manual entry example (string=TRUE)
+#Manual entry example (manual=TRUE)
 manmod <- "F1 =~ .602*Y1 + .805*Y2 + .857*Y3 + .631*Y4 + .345*Y5 + .646*Y6"
-cfaOne(manmod,500,string=TRUE)
+cfaOne(manmod,500,manual=TRUE)
 }
 \author{
 Melissa G Wolf & Daniel McNeish

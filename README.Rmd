@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 
 The goal of dynamic is to simulate fit index cutoffs for latent variable models that are tailored to the user's model statement, model type, and sample size. 
 
-This is the counterpart of the Shiny Application, [dynamicfit.app](https://dynamicfit.app/connect/).  The Shiny app and the R package will give you the same results.  If you are comfortable with R, consider using the package during high traffic times to reduce server burden.
+This is the counterpart of the Shiny Application, [dynamicfit.app](https://dynamicfit.app/connect/){target="_parent"}.  The Shiny app and the R package will give you the same results.  If you are comfortable with R, consider using the package during high traffic times to reduce server burden.
 
 ## Installation
 
@@ -44,7 +44,7 @@ devtools::install_github("melissagwolf/dynamic")
 ```{r example, eval=FALSE}
 library(dynamic)
 
-#Lavaan object example (string=FALSE)
+#Lavaan object example (manual=FALSE)
 dat <- lavaan::HolzingerSwineford1939
 lavmod <- "F1 =~ x1 + x2 + x3
           F2 =~ x4 + x5 + x6
@@ -52,7 +52,7 @@ lavmod <- "F1 =~ x1 + x2 + x3
 fit <- lavaan::cfa(lavmod,dat)
 cfaHB(fit)
 
-#Manual entry example (string=TRUE)
+#Manual entry example (manual=TRUE)
 manmod <- "F1 =~ .602*Y1 + .805*Y2 + .857*Y3 + .631*Y4 + .345*Y5 + .646*Y6"
-cfaOne(manmod,500,string=TRUE)
+cfaOne(manmod,500,manual=TRUE)
 ```

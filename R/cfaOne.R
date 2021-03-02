@@ -11,7 +11,7 @@
 #' @param n If you entered a \code{\link{lavaan}} object for model, leave this blank.
 #' Otherwise, enter your sample size (numeric).
 #' @param plot Displays distributions of fit indices for each level of misspecification.
-#' @param string If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
+#' @param manual If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
 #' If you manually entered standardized loadings and sample size, set this to TRUE.
 #'
 #' @import dplyr lavaan simstandard ggplot2 stringr
@@ -28,33 +28,33 @@
 #' @export
 #'
 #' @examples
-#' #Lavaan object example (string=FALSE)
+#' #Lavaan object example (manual=FALSE)
 #' dat <- lavaan::HolzingerSwineford1939
 #' lavmod <- "F1 =~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9"
 #' fit <- lavaan::cfa(lavmod,dat)
 #' cfaOne(fit)
 #'
-#' #Manual entry example (string=TRUE)
+#' #Manual entry example (manual=TRUE)
 #' manmod <- "F1 =~ .602*Y1 + .805*Y2 + .857*Y3 + .631*Y4 + .345*Y5 + .646*Y6"
-#' cfaOne(manmod,500,string=TRUE)
-cfaOne <- function(model,n=NULL,plot=FALSE,string=FALSE){
+#' cfaOne(manmod,500,manual=TRUE)
+cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE){
 
-  #If string, expect string (a la Shiny app)
-  if(string){
+  #If manual, expect manual (a la Shiny app)
+  if(manual){
     n=n
     model=model
   }else{
-    #Use this to rewrite error message for when someone forgot to use string=TRUE
+    #Use this to rewrite error message for when someone forgot to use manual=TRUE
     #But entered in model statement and sample size
     #This is hacky but works, although traceback might confuse people
     tryCatch(n <- cfa_n(model),
              error=function(err){
                if (grepl("trying to get slot", err$message)) {
-                 stop("Did you forget to use string=TRUE?")
+                 stop("Did you forget to use manual=TRUE?")
                }
              })
 
-    #Use these functions to convert to string (input is a lavaan object)
+    #Use these functions to convert to manual (input is a lavaan object)
     #Probably what we should expect for people using R
     #need 'n' first because otherwise model will overwrite
     n <- cfa_n(model)

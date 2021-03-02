@@ -5,7 +5,7 @@
 \alias{print.cfaHB}
 \title{Dynamic fit index (DFI) cutoffs adapted from Hu & Bentler (1999) for multi-factor CFA models}
 \usage{
-cfaHB(model, n = NULL, plot = FALSE, string = FALSE)
+cfaHB(model, n = NULL, plot = FALSE, manual = FALSE)
 
 \method{print}{cfaHB}(x, ...)
 }
@@ -18,7 +18,7 @@ Otherwise, enter your sample size (numeric).}
 
 \item{plot}{Displays distributions of fit indices for each level of misspecification.}
 
-\item{string}{If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
+\item{manual}{If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
 If you manually entered standardized loadings and sample size, set this to TRUE.}
 
 \item{x}{cfaHB object}
@@ -36,7 +36,7 @@ The function can also accommodate manual entry of the model statement and sample
 The app-based version of this function can be found at \href{https://dynamicfit.app/}{dynamicfit.app}.
 }
 \examples{
-#Lavaan object example (string=FALSE)
+#Lavaan object example (manual=FALSE)
 dat <- lavaan::HolzingerSwineford1939
 lavmod <- "F1 =~ x1 + x2 + x3
            F2 =~ x4 + x5 + x6
@@ -44,12 +44,12 @@ lavmod <- "F1 =~ x1 + x2 + x3
 fit <- lavaan::cfa(lavmod,dat)
 cfaHB(fit)
 
-#Manual entry example (string=TRUE)
+#Manual entry example (manual=TRUE)
 manmod <- "F1 =~ .602*Y1 + .805*Y2 + .516*Y3 + .857*Y4
            F2 =~ .413*Y5 + -.631*Y6
            F1 ~~ .443*F2
            Y4 ~~ .301*Y5"
-cfaHB(manmod,500,string=TRUE)
+cfaHB(manmod,500,manual=TRUE)
 }
 \author{
 Melissa G Wolf & Daniel McNeish

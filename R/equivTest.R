@@ -17,7 +17,7 @@
 #' enter your baseline chi-square.
 #' @param p If you entered a \code{\link{lavaan}} object for n, leave this blank. Otherwise,
 #' enter the number of parameters in your model.
-#' @param string If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
+#' @param manual If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
 #' If you manually entered each argument, set this to TRUE.
 #' @param plot Displays a simple plot that compares your T-size RMSEA and T-Size CFI to the adjusted
 #' bins.
@@ -34,7 +34,7 @@
 #' @export
 #'
 #' @examples
-#' #Lavaan object example (string=FALSE)
+#' #Lavaan object example (manual=FALSE)
 #' dat <- lavaan::HolzingerSwineford1939
 #' lavmod <- "F1 =~ x1 + x2 + x3
 #'            F2 =~ x4 + x5 + x6
@@ -42,34 +42,34 @@
 #' fit <- lavaan::cfa(lavmod,dat)
 #' equivTest(fit)
 #'
-#' #Manual entry example (string=TRUE)
+#' #Manual entry example (manual=TRUE)
 #' n <- 301
 #' T_ml <- 85.306
 #' df <- 24
 #' T_mli <- 918.852
 #' p <- 9
-#' equivTest(n,T_ml,df,T_mli,p,string=TRUE)
-equivTest <- function(n,T_ml=NULL,df=NULL,T_mli=NULL,p=NULL,string=FALSE,plot=FALSE){
+#' equivTest(n,T_ml,df,T_mli,p,manual=TRUE)
+equivTest <- function(n,T_ml=NULL,df=NULL,T_mli=NULL,p=NULL,manual=FALSE,plot=FALSE){
 
-  #if string, expect string (a la shiny app)
-  if(string){
+  #if manual, expect manual (a la shiny app)
+  if(manual){
     p=p
     T_ml=T_ml
     df=df
     T_mli=T_mli
     n=n
   }else{
-    #Use this to rewrite error message for when someone forgot to use string=TRUE
+    #Use this to rewrite error message for when someone forgot to use manual=TRUE
     #But entered in model statement and sample size
     #This is hacky but works, although traceback might confuse people
     tryCatch(T_ml <- equiv_T_ml(n),
              error=function(err){
                if (grepl("trying to get slot", err$message)) {
-                 stop("Did you forget to use string=TRUE?")
+                 stop("Did you forget to use manual=TRUE?")
                }
              })
 
-    #Use these functions to convert to string (input is a lavaan object)
+    #Use these functions to convert to manual (input is a lavaan object)
     #Probably what we should expect for people using R
     #need 'n' last because otherwise model will overwrite
     T_ml <- equiv_T_ml(n)
