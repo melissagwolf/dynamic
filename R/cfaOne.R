@@ -137,7 +137,7 @@ cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE){
   #Add rownames to final table
   Final_Table <- Table_C %>%
     tidyr::unite(Cut,levelnum,cut,sep=": ") %>%
-    column_to_rownames(var='Cut')
+    tibble::column_to_rownames(var='Cut')
 
   #Put into list
   res$output$Cutoffs <- Final_Table

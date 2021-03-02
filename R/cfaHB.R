@@ -17,6 +17,7 @@
 #' @import dplyr lavaan simstandard ggplot2 stringr
 #' @importFrom purrr map map_dfr map2
 #' @importFrom tidyr unite separate extract
+#' @importFrom tibble column_to_rownames
 #'
 #' @author Melissa G Wolf & Daniel McNeish
 #'
@@ -150,6 +151,9 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE){
                      mutate(Magnitude=as.numeric(Magnitude),
                             Magnitude=round(Magnitude,digits=3)) %>%
                      slice(rep(1:n,each=2)))
+
+  #Delete rownames (dplyr update?)
+  rownames(mag) <- NULL
 
   #Clean cross-loading magnitude
   even <- seq_len(nrow(mag))%%2
