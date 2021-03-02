@@ -57,7 +57,15 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE){
     tryCatch(cfa_n(model),
              error=function(err){
                if (grepl("trying to get slot", err)) {
-                 stop("Did you forget to use manual=TRUE?")
+                 stop("dynamic Error: Did you forget to use manual=TRUE?")
+               }
+             })
+
+    #Error for when someone enters an object that doesn't exist, or a non-lavaan object
+    tryCatch(cfa_n(model),
+             error=function(err2){
+               if (grepl("Error in base::unlist", err2)){
+                 stop("dynamic Error: Did you enter a lavaan object? Confirm that it is a lavaan object using class(). If you do not have a lavaan object, enter the arguments manually and select manual=TRUE.")
                }
              })
 

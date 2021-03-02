@@ -100,13 +100,20 @@ hide_ov <- function(h){
     invokeRestart("muffleWarning")
 }
 
+hide_objtest <- function(j){
+  if(any(grepl("restarting interrupted promise evaluation", j)))
+    invokeRestart("muffleWarning")
+}
+
 ##### NEW: Extract n from lavaan object #####
 #SPECIFIC TO R PACKAGE
 
 cfa_n <- function(model){
 
   #Extract n from lavaan object
-  n <- base::unlist(model@SampleStats@nobs)
+  #Warning message to hide warning when someone enters a non-lavaan object (error message will display instead)
+  #Only need it here because this is the first argument in cfaHB and cfaOne
+  n <- base::withCallingHandlers(base::unlist(model@SampleStats@nobs),warning=hide_objtest)
   return(n)
 }
 
@@ -1245,7 +1252,9 @@ equiv_p <- function(obj){
 }
 
 equiv_T_ml <- function(obj){
-  T_ml <- base::unlist(obj@test[["standard"]][["stat"]])
+  #Warning message to hide warning when someone enters a non-lavaan object (error message will display instead)
+  #Only need it here because this is the first argument in equivTest
+  T_ml <- base::withCallingHandlers(base::unlist(obj@test[["standard"]][["stat"]]), warning=hide_objtest)
   return(T_ml)
 }
 

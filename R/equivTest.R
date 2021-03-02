@@ -66,7 +66,15 @@ equivTest <- function(n,T_ml=NULL,df=NULL,T_mli=NULL,p=NULL,manual=FALSE,plot=FA
     tryCatch(equiv_T_ml(n),
              error=function(err){
                if (grepl("trying to get slot", err)) {
-                 stop("Did you forget to use manual=TRUE?")
+                 stop("dynamic Error: Did you forget to use manual=TRUE?")
+               }
+             })
+
+    #Error for when someone enters an object that doesn't exist, or a non-lavaan object
+    tryCatch(equiv_T_ml(n),
+             error=function(err2){
+               if (grepl("Error in base::unlist", err2)){
+                 stop("dynamic Error: Did you enter a lavaan object? Confirm that it is a lavaan object using class(). If you do not have a lavaan object, enter the arguments manually and select manual=TRUE.")
                }
              })
 
@@ -79,6 +87,14 @@ equivTest <- function(n,T_ml=NULL,df=NULL,T_mli=NULL,p=NULL,manual=FALSE,plot=FA
     p <- equiv_p(n)
     n <- equiv_n(n)
   }
+
+  #Error for when someone doesn't enter all 5 arguments when they select manual=T
+  tryCatch(equiv_cutoffs(p,T_ml,df,T_mli,n),
+           error=function(err3){
+             if (grepl("non-numeric argument to binary operator", err3)){
+               stop("dynamic Error: Did you enter all 5 arguments and select manual=TRUE?")
+             }
+           })
 
   #Create list to store outputs (table and plot)
   res <- list(input=as.list(environment),
