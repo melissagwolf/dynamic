@@ -47,9 +47,9 @@ cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE){
     #Use this to rewrite error message for when someone forgot to use manual=TRUE
     #But entered in model statement and sample size
     #This is hacky but works, although traceback might confuse people
-    tryCatch(n <- cfa_n(model),
+    tryCatch(cfa_n(model),
              error=function(err){
-               if (grepl("trying to get slot", err$message)) {
+               if (grepl("trying to get slot", err)) {
                  stop("Did you forget to use manual=TRUE?")
                }
              })
