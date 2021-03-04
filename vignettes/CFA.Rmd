@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 
 This package was created as supplemental material for *Dynamic Fit Index Cutoffs for Confirmatory Factor Analysis Models*, currently available as a [preprint](https://psyarxiv.com/v8yru){target="_parent"}. This package computes fit index cutoffs for CFA models that are tailored to the user's model statement and sample size. This enables the user to estimate the extent of misspecification(s) in their particular model.  
 
-- The misspecifications for the multi-factor CFA model, `cfaHB`, are defined conventionally in line with Hu & Bentler's (1999) approach to misspecification.  The DFI cutoff approach expands upon Hu & Bentler's method to include multiple levels of misspecification.
+- The misspecifications for the multi-factor CFA model, `cfaHB`, are defined conventionally in line with Hu & Bentler's (1999) approach to misspecification.  The DFI cutoff approach expands upon Hu & Bentler's method to include multiple levels of misspecification (one level for each F-1 factor, where F is the number of factors in the model).
 
 - The misspecifications for the one-factor CFA model, `cfaOne`, are standardized to account for the number of items in the model.  There are up to three levels of misspecification for DFI cutoffs for one-factor CFAs, each increasing in severity (such that a Level-3 misspecification is the most misspecified model).
 
@@ -30,7 +30,7 @@ Advances in computation and the accessibility of [RStudio's Shiny applications](
 
 **cfaOne** and **cfaHB** each require two pieces of information: the user's model statement and sample size.  Both functions can read in this information from a `lavaan` object.  The default argument for each function is the `lavaan` object, which corresponds to the default for the manual argument (`manual=FALSE`).  We will use the `cfaHB` function as an example here.  
 
-For this example, we will use the `HolzingerSwineford1939` dataset that is built into the `lavaan`package.  This is a multi-factor CFA model (click [here](https://lavaan.ugent.be/tutorial/cfa.html){target="_parent"} for a `lavaan` CFA tutorial.  This data consists of a "mental ability" test with three factors: visual, textual, and speed. There are nine items; the first three load on visual, the second three load on textual, and the last three load on speed.  The sample size is 301.
+For this example, we will use the `HolzingerSwineford1939` dataset that is built into the `lavaan` package.  This is a multi-factor CFA model (click [here](https://lavaan.ugent.be/tutorial/cfa.html){target="_parent"} for a `lavaan` CFA tutorial).  This data consists of a "mental ability" test with three factors: visual, textual, and speed. There are nine items; the first three load on visual, the second three load on textual, and the last three load on speed.  The sample size is 301.
 
 The user would begin by loading the dataset and running the three-factor CFA model:
 
@@ -43,20 +43,20 @@ lavmod <- "visual  =~ x1 + x2 + x3
 fit <- lavaan::cfa(model=lavmod,data=dat)
 ```
 
-The `lavaan` object, `fit`, would then be used as the argument for `cfaHB` (since this is a multi-factor model).  This will run a simulation with 500 replications to compute the DFI cutoffs tailored to this specific model, and return two levels of misspecifications for the SRMR, RMSEA, and CFI.  It will also include the magnitude of each missing cross-loading from the data generating model, to give the user an idea of the severity of the misspecification.  Because we requested the plots with `plot=TRUE`, there will be two plots with distributions of fit indices - one for each level of misspecification.  
+The `lavaan` object, `fit`, would then be used as the sole argument for `cfaHB` (since this is a multi-factor model).  This will run a simulation with 500 replications per level to compute the DFI cutoffs tailored to this specific model, and return the two levels of misspecifications for the SRMR, RMSEA, and CFI.  It will also include the magnitude of each missing cross-loading from the data generating model, to give the user an idea of the severity of the misspecification.  Because we requested the plots with `plot=TRUE`, there will be two plots with distributions of fit indices - one for each level of misspecification.  
 
 ```{r fig.height=3, fig.width=7, message=FALSE, warning=FALSE}
 library(dynamic)
 dynamic::cfaHB(fit, plot = TRUE)
 ```
 
-The SRMR for this model was .065, while the RMSEA was .092 and the CFI was .931.  The SRMR and RMSEA exceed the Level-1 and Level-2 cutoff values, and the CFI falls below the Level-1 and Level-2 cutoff values.  This means that the fit for this model is equivalent to *at least* two missing cross-loadings in the data generating model, one with a magnitude of .424 and the second with a magnitude of .570.  This model would not have fit well by Hu & Bentler's traditional cutoffs (SRMR < .08, RMSEA < .06, CFI > .95), but the fit is even poorer when compared to the DFI cutoffs tailored to the user's model.
+The SRMR for this model was .065, while the RMSEA was .092 and the CFI was .931 (these are found by running `fitMeasures(fit)`).  The SRMR and RMSEA exceed the Level-1 and Level-2 cutoff values, and the CFI falls below the Level-1 and Level-2 cutoff values.  This means that the fit for this model is equivalent to *at least* two missing cross-loadings in the data generating model, one with a magnitude of .424 and the second with a magnitude of .570.  This model would not have fit well by Hu & Bentler's traditional cutoffs (SRMR < .08, RMSEA < .06, CFI > .95), but the fit is even poorer when compared to the DFI cutoffs tailored to the user's model.
 
 ## Example with manual input (manual=TRUE)
 
-Each function can also accommodate those that did not analyze their CFA models using `lavaan`.  This can be done by triggering `manual=TRUE`, which will tell the function to expect two arguments (model statement and sample size).  For users that want to manually input their model statements, they should be written in lavaan compatible [model syntax](https://lavaan.ugent.be/tutorial/syntax1.html){target="_parent"} using **standardized** loadings.  The second argument will be the user's manually entered sample size (this is only necessary for users who manually input their model statement). We will use the `cfaOne` function as an example here.
+Each function can also accommodate those that did not analyze their CFA models using `lavaan`.  This can be done by triggering `manual=TRUE`, which will tell the function to expect *two* arguments (model statement and sample size).  For users that want to manually input their model statements, they should be written in lavaan compatible [model syntax](https://lavaan.ugent.be/tutorial/syntax1.html){target="_parent"} using **standardized** loadings.  The second argument will be the user's manually entered sample size (this is only necessary for users who manually input their model statement). We will use the `cfaOne` function as an example here.
 
-Again, we will rely on the `HolzingerSwineford1939` dataset that is built into the `lavaan`package.  This time, we will pretend that the hypothesized model is a one-factor model with 6 items.  Because we did not request any plots, none will appear.
+Again, we will rely on the `HolzingerSwineford1939` dataset that is built into the `lavaan` package.  This time, we will pretend that the hypothesized model is a one-factor model with 6 items.  We run a one-factor CFA, extract the standardized loadings, and use them to write the model statement `manmod`.  We then enter the sample size from the dataset (301), and select manual=TRUE.  Because we did not request any plots, none will appear.
 
 ```{r fig.height=3, fig.width=7}
 manmod <- "visualtextual =~ .419*x1 + .212*x2 + .203*x3 + .852*x4 + .847*x5 + .840*x6"
@@ -68,7 +68,7 @@ The SRMR for this model was .114, while the RMSEA was .187 and the CFI was .856.
 
 ## Shiny Application
 
-There is a Shiny counterpart to this package.  It can be found at [dynamicfit.app](https://dynamicfit.app/cfa){target="_parent"}.  The package and the app are identical and will produce the same results.
+There is a Shiny app counterpart to this package.  It can be found at [dynamicfit.app](https://dynamicfit.app/cfa){target="_parent"}.  The package and the app are identical and will produce the same results.
 
 ## References
 
