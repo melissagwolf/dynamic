@@ -1,6 +1,6 @@
 #' @title Dynamic fit index (DFI) cutoffs for one-factor CFA models
 #'
-#' @description This function generates DFI cutoffs for one-factor CFA models.
+#' @description This function generates DFI cutoffs for one-factor CFA models using ML estimation.
 #' The default argument is a singular argument: a \code{\link{lavaan}} object from the \code{\link{cfa}} function.
 #' The function can also accommodate manual entry of the model statement and sample size.
 #'

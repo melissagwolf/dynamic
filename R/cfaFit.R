@@ -1,4 +1,4 @@
-#' @title Deprecated: Fit index cutoffs for single level confirmatory factor analysis models
+#' @title Deprecated: Fit index cutoffs for single level confirmatory factor analysis models (ML estimation)
 #'
 #' @description Deprecated. If you want to replicate the cfaFit cutoffs for multi-factor models, use the function \code{\link{cfaHB}}.
 #' The first level will be identical to the results from cfaFit. The cutoffs for one-factor models from cfaFit cannot be
