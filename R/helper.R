@@ -20,6 +20,7 @@ cleanmodel <- function(model){
   suppressMessages(model %>%
                      lavaan::lavaanify(fixed.x = FALSE) %>%
                      dplyr::filter(.data$lhs != .data$rhs) %>%
+                     dplyr::filter(.data$op != "~1") %>%
                      dplyr::group_by(.data$lhs, .data$op) %>%
                      dplyr::summarise(rhs = paste(.data$rhs, collapse = " + ")) %>%
                      dplyr::arrange(dplyr::desc(.data$op)) %>%
@@ -129,6 +130,7 @@ cfa_lavmod <- function(model){
   ss_mod <- suppressMessages(lav %>%
                                dplyr::filter(lhs != rhs) %>%
                                dplyr::group_by(lhs,op) %>%
+                               dplyr::filter(op != "~1") %>%
                                dplyr::select(lhs,op,rhs,est.std) %>%
                                dplyr::mutate(est.std=round(est.std,digits=4)) %>%
                                dplyr::summarise(rhs=paste(est.std,"*",rhs,collapse=" + ")) %>%
