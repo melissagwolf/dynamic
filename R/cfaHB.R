@@ -145,7 +145,9 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE){
   Table_C[seq(2,nrow(Table_C),by=2),] <- Row2
 
   #For row names
-  num_fact <- (number_factor(model)-1)
+  #Can't use number_factor because some factors may be ineligible for cross-loadings
+  #Instead, just grab the length of number of misspecifications we're adding
+  num_fact <- length(DGM_Multi_HB(model))
 
   #Create row names for level
   Table_C$levelnum <- paste("Level", rep(1:num_fact,each=2))
