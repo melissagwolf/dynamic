@@ -45,3 +45,8 @@ cfaHB(fit)
 manmod <- "F1 =~ .602*Y1 + .805*Y2 + .857*Y3 + .631*Y4 + .345*Y5 + .646*Y6"
 cfaOne(manmod,500,manual=TRUE)
 ```
+
+## Vignette
+
+Click [here](https://rpubs.com/melissagwolf/847463).
+
