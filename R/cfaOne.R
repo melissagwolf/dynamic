@@ -71,7 +71,7 @@ cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE){
   }
 
   if (unstandardized(model)>0){
-    stop("dynamic Error: Your model has loadings greater than or equal to 1 (an impossible value). Please use standardized loadings.")
+    stop("dynamic Error: One of your loadings or correlations has an absolute value of 1 or above (an impossible value). Please use standardized loadings. If all of your loadings are under 1, try looking for a missing decimal somewhere in your model statement.")
   }
 
   if (number_factor(model)>1){

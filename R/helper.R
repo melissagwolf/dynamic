@@ -60,7 +60,7 @@ unstandardized <- function(model){
     dplyr::filter(.data$lhs != .data$rhs)
 
   one_plus <- lav_file %>%
-    dplyr::filter(ustart >= 1) %>%
+    dplyr::filter(ustart >= 1 | ustart <= -1) %>%
     base::nrow()
 
   return(one_plus)
@@ -366,7 +366,7 @@ multi_factor <- function(model){
   L1 <- modinfo$Loading               #to ensure that the dgm matrix
   L1_Sq <- L1^2                       #is positive definite
   E <- 1-L1_Sq
-  MaxAllow <- ((sqrt((L1_Sq*F1_Sq)+E)-(L1*F1))*.95)
+  MaxAllow <- ((sqrt((L1_Sq*F1_Sq)+E)-(abs(L1*F1)))*.95)
 
   #extract value of loading
   Final_Loading <- round(min(L1,MaxAllow),4)
@@ -964,7 +964,7 @@ multi_add_HB <- function(model){
                   L1=Loading,
                   L1_Sq=L1^2,
                   E=1-L1_Sq) %>%
-    dplyr::mutate(MaxAllow=((base::sqrt(((L1_Sq*F1_Sq)+E))-(L1*F1))*.95),
+    dplyr::mutate(MaxAllow=((base::sqrt(((L1_Sq*F1_Sq)+E))-(abs(L1*F1)))*.95),
                   MaxAllow2=base::round(MaxAllow,digits=4),
                   Final_Loading=base::pmin(Loading,MaxAllow2),
                   times="*") %>%
