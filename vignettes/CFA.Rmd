@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-This package was created as supplemental material for *Dynamic Fit Index Cutoffs for Confirmatory Factor Analysis Models*, currently available as a [preprint](https://psyarxiv.com/v8yru){target="_parent"}. This package computes fit index cutoffs for CFA models that are tailored to the user's model statement and sample size. This enables the user to estimate the extent of misspecification(s) in their particular model.  
+This package was created as supplemental material for *Dynamic Fit Index Cutoffs for Confirmatory Factor Analysis Models*, recently published in [Psych Methods](https://psycnet.apa.org/record/2021-98816-001){target="_parent"} and also accessible on [PsyArXiv](https://psyarxiv.com/v8yru){target="_parent"}. This package computes fit index cutoffs for CFA models that are tailored to the user's model statement and sample size. This enables the user to estimate the extent of misspecification(s) in their particular model.  
 
 - The misspecifications for the multi-factor CFA model, `cfaHB`, are defined conventionally in line with Hu & Bentler's (1999) approach to misspecification.  The DFI cutoff approach expands upon Hu & Bentler's method to include multiple levels of misspecification (one level for each F-1 factor, where F is the number of factors in the model).
 
@@ -52,11 +52,13 @@ dynamic::cfaHB(fit, plot = TRUE)
 
 The SRMR for this model was .065, while the RMSEA was .092 and the CFI was .931 (these are found by running `fitMeasures(fit)`).  The SRMR and RMSEA exceed the Level-1 and Level-2 cutoff values, and the CFI falls below the Level-1 and Level-2 cutoff values.  This means that the fit for this model is equivalent to *at least* two missing cross-loadings in the data generating model, one with a magnitude of .424 and the second with a magnitude of .570.  This model would not have fit well by Hu & Bentler's traditional cutoffs (SRMR < .08, RMSEA < .06, CFI > .95), but the fit is even poorer when compared to the DFI cutoffs tailored to the user's model.
 
+Note that there are no cutoffs available at Level-1 for the 95/5 criteria.  This is because the fit index distributions for the misspecified and true models overlap too much to return a cutoff value that can correctly identify a misspecified model as misspeified 95% of the time while also correctly identifying a correctly specified model as correctly specified 95% of the time.  You can see this overlap on Level 1 figures. Note that for Level-2, the distributions are much further apart.
+
 ## Example with manual input (manual=TRUE)
 
 Each function can also accommodate those that did not analyze their CFA models using `lavaan`.  This can be done by triggering `manual=TRUE`, which will tell the function to expect *two* arguments (model statement and sample size).  For users that want to manually input their model statements, they should be written in lavaan compatible [model syntax](https://lavaan.ugent.be/tutorial/syntax1.html){target="_parent"} using **standardized** loadings.  The second argument will be the user's manually entered sample size (this is only necessary for users who manually input their model statement). We will use the `cfaOne` function as an example here.
 
-Again, we will rely on the `HolzingerSwineford1939` dataset that is built into the `lavaan` package.  This time, we will pretend that the hypothesized model is a one-factor model with 6 items.  We run a one-factor CFA, extract the standardized loadings, and use them to write the model statement `manmod`.  We then enter the sample size from the dataset (301), and select manual=TRUE.  Because we did not request any plots, none will appear.
+Again, we will rely on the `HolzingerSwineford1939` dataset that is built into the `lavaan` package.  This time, we will pretend that the hypothesized model is a one-factor model with 6 items.  We run a one-factor CFA, extract the standardized loadings, and use them to write the model statement `manmod`.  We then enter the sample size from the dataset (301), and select `manual=TRUE`.  Because we did not request any plots, none will appear.
 
 ```{r fig.height=3, fig.width=7}
 manmod <- "visualtextual =~ .419*x1 + .212*x2 + .203*x3 + .852*x4 + .847*x5 + .840*x6"
@@ -70,18 +72,20 @@ The SRMR for this model was .114, while the RMSEA was .187 and the CFI was .856.
 
 There is a Shiny app counterpart to this package.  It can be found at [dynamicfit.app](https://dynamicfit.app/cfa){target="_parent"}.  The package and the app are identical and will produce the same results.
 
-## References
+## Citation Recommendations
 
-To learn more about why you should use dynamic model fit index cutoffs instead of [Hu & Bentler's (1999)](https://psycnet.apa.org/record/1998-03102-001){target="_parent"} fixed model fit index cutoff values, consider these articles:
+To cite the ideas behind dynamic model fit index cutoff values:
 
-- Greiff, S., & Heene, M. [(2017)](https://doi.org/10.1027/1015-5759/a000450){target="_parent"}. Why psychological assessment needs to start worrying about model fit [Editorial]. *European Journal of Psychological Assessment, 33*(5), 313–317. 
-- Heene, M., Hilbert, S., Draxler, C., Ziegler, M., & Bühner, M. [(2011)](https://doi.org/10.1037/a0024917){target="_parent"}. Masking misfit in confirmatory factor analysis by increasing unique variances: A cautionary note on the usefulness of cutoff values of fit indices. *Psychological Methods, 16*(3), 319–336. 
-- Marsh, H. W., Hau, K. T., & Wen, Z. [(2004)](https://www.researchgate.net/publication/289963902_In_Search_of_Golden_Rules_Comment_on_Hypothesis-Testing_Approaches_to_Setting_Cutoff_Values_for_Fit_Indexes_and_Dangers_in_Overgeneralizing_Hu_and_Bentler's_1999_Findings){target="_parent"}. In Search of Golden Rules: Comment on Hypothesis-Testing Approaches to Setting Cutoff Values for Fit Indexes and Dangers in Overgeneralizing Hu and Bentler's (1999) Findings. *Structural Equation Modeling: A Multidisciplinary Journal, 11*(3), 320-341.
-- McNeish, D., An, J. & Hancock, G. R. [(2018)](https://www.researchgate.net/publication/311536084_The_Thorny_Relation_between_Measurement_Quality_and_Fit_Index_Cut-Offs_in_Latent_Variable_Models){target="_parent"}. The Thorny Relation Between Measurement Quality and Fit Index Cutoffs in Latent Variable Models. *Journal of Personality Assessment, 100*(1), 43-52.
-- Millsap, R. E. [(2007)](https://www.sciencedirect.com/science/article/abs/pii/S0191886906003862){target="_parent"}. Structural equation modeling made difficult. *Personality and Individual Differences, 42*, 875-881.
-- Muliak, S. [(2007)](https://psycnet.apa.org/record/2007-02474-010){target="_parent"}. There is a place for approximate fit in structural equation modelling. *Personality and Individual Differences, 42*(5), 883–891.
-- Shi, D., Lee, T., & Maydeu-Olivares, A. [(2019)](https://www.researchgate.net/publication/326077335_Understanding_the_Model_Size_Effect_on_SEM_Fit_Indices){target="_parent"}. Understanding the model size effect on SEM fit indices. *Educational and Psychological Measurement, 79*(2), 310-334.
-- Shi, D., & Maydeu-Olivares, A. [(2020)](https://journals.sagepub.com/doi/10.1177/0013164419885164?icid=int.sj-abstract.citing-articles.1){target="_parent"}. The Effect of Estimation Methods on SEM Fit Indices. *Educational and Psychological Measurement, 80*(3), 421-445.
+- [McNeish, D.](https://sites.google.com/site/danielmmcneish/home){target="_parent"} & [Wolf, M. G.](https://www.melissagwolf.com/){target="_parent"} (2021). Dynamic Fit Index Cutoffs for Confirmatory Factor Analysis Models.
+*Psychological Methods*. [https://doi.org/10.1037/met0000425](https://psycnet.apa.org/record/2021-98816-001){target="_parent"}
+
+    - [*PsyArXiv link*](https://psyarxiv.com/v8yru/){target="_parent"}
+
+To cite the dynamic model index cutoff values generated by this app:
+
+- [Wolf, M. G.](https://www.melissagwolf.com/){target="_parent"} & [McNeish, D.](https://sites.google.com/site/danielmmcneish/home){target="_parent"} (2020). Dynamic Model Fit. R Shiny application version 1.1.0.
+
+
   
 ## This package relies on the following packages:
 
