@@ -2,7 +2,7 @@
 % Please edit documentation in R/cfaFit.R
 \name{cfaFit}
 \alias{cfaFit}
-\title{Deprecated: Fit index cutoffs for single level confirmatory factor analysis models}
+\title{Deprecated: Fit index cutoffs for single level confirmatory factor analysis models (ML estimation)}
 \usage{
 cfaFit(model, n)
 }

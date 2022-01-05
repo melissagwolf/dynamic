@@ -29,7 +29,7 @@ If you manually entered standardized loadings and sample size, set this to TRUE.
 Dynamic fit index (DFI) cutoffs for SRMR, RMSEA, and CFI.
 }
 \description{
-This function generates DFI cutoffs adapted from Hu & Bentler (1999) for multi-factor CFA models.
+This function generates DFI cutoffs adapted from Hu & Bentler (1999) for multi-factor CFA models using ML estimation.
 The default argument is a singular argument: a \code{\link{lavaan}} object from the \code{\link{cfa}} function.
 The function can also accommodate manual entry of the model statement and sample size.
 
@@ -50,6 +50,7 @@ manmod <- "F1 =~ .602*Y1 + .805*Y2 + .516*Y3 + .857*Y4
            F1 ~~ .443*F2
            Y4 ~~ .301*Y5"
 cfaHB(manmod,500,manual=TRUE)
+
 }
 \author{
 Melissa G Wolf & Daniel McNeish

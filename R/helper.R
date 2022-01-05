@@ -6,12 +6,14 @@
 #' @importFrom simstandard sim_standardized
 #' @importFrom purrr map map_dfr
 #' @import ggplot2
-#' @importFrom stats quantile
+#' @importFrom stats quantile qnorm
 
 
 ############################################################################
 ########################### Multiple Functions #############################
 ############################################################################
+
+
 
 #### Function to create model statement without numbers from user model (for input) ####
 #Copy from OG
@@ -894,7 +896,7 @@ multi_add_HB <- function(model){
   factcor1 <- factors %>%
     dplyr::mutate(type="Factor") %>%
     dplyr::full_join(lav_file, by = "lhs") %>%
-    dplyr::mutate(type=recode(type, .missing ="Error Correlation")) %>%
+    dplyr::mutate(type=dplyr::recode(type, .missing ="Error Correlation")) %>%
     dplyr::select(lhs,op,rhs,ustart,type) %>%
     dplyr::filter(op=="~~" & type=="Factor")
 
@@ -1139,7 +1141,7 @@ multi_df_HB <- function(model,n){
 
 equiv_ncp_chi2 <- function(alpha,T_ml,df){
 
-  z=qnorm(1-alpha)
+  z=stats::qnorm(1-alpha)
   z2=z*z
   z3=z2*z
   z4=z3*z
@@ -1268,4 +1270,51 @@ equiv_T_mli <- function(obj){
 equiv_df <- function(obj){
   df <- base::unlist(obj@test[["standard"]][["df"]])
   return(df)
+}
+
+############################################################################
+################################ exactFit ##################################
+############################################################################
+
+exact_fit_dat <- function(model,n,reps){
+  mod <- cleanmodel(model)
+
+  true_dgm <- model
+
+  #Use max sample size of 10000
+  n <- base::min(n,2000)
+
+  #Set Seed
+  set.seed(793267)
+
+  #Number of reps
+  r <- reps
+
+  #Simulate one large dataset
+  all_data_true <- simstandard::sim_standardized(m=true_dgm,n = n*r,
+                                                 latent = FALSE,
+                                                 errors = FALSE)
+
+  #Create indicator to split into r datasets for r reps
+  rep_id_true <- base::rep(1:r,n)
+
+  #Combine indicator with dataset
+  dat_rep_true <- base::cbind(all_data_true,rep_id_true)
+
+  #Group and list
+  true_data <- dat_rep_true %>%
+    dplyr::group_by(rep_id_true) %>%
+    tidyr::nest() %>%
+    base::as.list()
+
+  #Run 500 cfa
+  true_sem <- purrr::map(true_data$data,~base::withCallingHandlers(lavaan::sem(model = mod, data=., std.lv=TRUE),
+                                                                   warning=hide_ov))
+
+  #Extract fit stats from each rep (list) into a data frame and clean
+  true_fit_sum <- purrr::map_dfr(true_sem,~lavaan::fitMeasures(., c("chisq", "df","srmr","rmsea","cfi")))
+
+  set.seed(NULL)
+
+  return(true_fit_sum)
 }

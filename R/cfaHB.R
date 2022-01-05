@@ -43,6 +43,7 @@
 #'            F1 ~~ .443*F2
 #'            Y4 ~~ .301*Y5"
 #' cfaHB(manmod,500,manual=TRUE)
+#'
 cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE){
 
   #If manual, expect manual (a la Shiny app)
@@ -220,11 +221,11 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE){
                                               linetype=".08",color=".08"),
                                           size=.75)+
                                scale_color_manual(name="Cutoff Values",
-                                                  labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
+                                                  labels=c("Dynamic Cutoff","Hu & Benter Cutoff"),
                                                   values=c("misspec_sum$SRMR_M[1]"="black",
                                                            ".08"="black"))+
                                scale_linetype_manual(name="Cutoff Values",
-                                                     labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
+                                                     labels=c("Dynamic Cutoff","Hu & Benter Cutoff"),
                                                      values=c("misspec_sum$SRMR_M[1]"="longdash",
                                                               ".08"="dotted"))+
                                theme(axis.title.y = element_blank(),
@@ -248,11 +249,11 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE){
                                                linetype=".06",color=".06"),
                                            size=.75)+
                                 scale_color_manual(name="Cutoff Values",
-                                                   labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
+                                                   labels=c("Dynamic Cutoff","Hu & Benter Cutoff"),
                                                    values=c("misspec_sum$RMSEA_M[1]"="black",
                                                             ".06"="black"))+
                                 scale_linetype_manual(name="Cutoff Values",
-                                                      labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
+                                                      labels=c("Dynamic Cutoff","Hu & Benter Cutoff"),
                                                       values=c("misspec_sum$RMSEA_M[1]"="longdash",
                                                                ".06"="dotted"))+
                                 theme(axis.title.y = element_blank(),
@@ -276,11 +277,11 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE){
                                              linetype=".95",color=".95"),
                                          size=.75)+
                               scale_color_manual(name="Cutoff Values",
-                                                 labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
+                                                 labels=c("Dynamic Cutoff","Hu & Benter Cutoff"),
                                                  values=c("misspec_sum$CFI_M[1]"="black",
                                                           ".95"="black"))+
                               scale_linetype_manual(name="Cutoff Values",
-                                                    labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
+                                                    labels=c("Dynamic Cutoff","Hu & Benter Cutoff"),
                                                     values=c("misspec_sum$CFI_M[1]"="longdash",
                                                              ".95"="dotted"))+
                               theme(axis.title.y = element_blank(),
