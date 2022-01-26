@@ -9,7 +9,7 @@
 #' @param n If you entered a \code{\link{lavaan}} object for model, leave this blank.
 #' Otherwise, enter your sample size (numeric).
 #' @param reps The number of replications used in your simulation (default is 1000).
-#' @param plot Displays distributions of fit indices for each level of misspecification.
+#' @param plot Displays distributions of fit indices for each fit index.
 #' @param manual If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
 #' If you manually entered standardized loadings and sample size, set this to TRUE.
 #'

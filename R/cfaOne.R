@@ -87,11 +87,13 @@ cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE){
   }
 
   #Create list to store outputs (table and plot)
-  res <- list(input=as.list(environment),
-              output=list())
+  res <- list()
 
   #Run simulation
   results <- one_df(model,n)
+
+  #Save the data and make it exportable
+  res$data <- results
 
   #For each list element (misspecification) compute the cutoffs
   misspec_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_M=stats::quantile(SRMR_M, c(.05,.1)),
@@ -149,7 +151,7 @@ cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE){
     tibble::column_to_rownames(var='Cut')
 
   #Put into list
-  res$output$Cutoffs <- Final_Table
+  res$cutoffs <- Final_Table
 
   #If user selects plot = T
   if(plot){
@@ -270,7 +272,7 @@ cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE){
                           & theme(legend.position = 'bottom'))
 
     #Put into list
-    res$output$Plots <- plots
+    res$plots <- plots
 
   }
 
