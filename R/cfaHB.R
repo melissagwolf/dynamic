@@ -329,12 +329,12 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE){
 print.cfaHB <- function(x,...){
 
   base::cat("Your DFI cutoffs: \n")
-  base::print(x$output$Cutoffs)
+  base::print(x$cutoffs)
 
-  if(!is.null(x$output$Plots)){
+  if(!is.null(x$plots)){
 
     base::cat("\n The distributions for each level are in the Plots tab \n")
-    base::print(x$output$Plots)
+    base::print(x$plots)
   }
 
   #Hides this function
