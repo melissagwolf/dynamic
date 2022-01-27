@@ -147,6 +147,55 @@ cfa_lavmod <- function(model){
 
 }
 
+#### Function to clean dataset of fit indices (now exportable as of 1.26.22)
+
+fit_data <- function(df_results){
+
+  #Create beginning of variable name for each
+  dat_name <- base::rep(c("SRMR_L","RMSEA_L","CFI_L","Type_L"),2)
+
+  #Create vector of 0's for the True model
+  dat_0 <- base::rep(0,4)
+
+  #Get number of levels of misspecification
+  dat_lev <- base::length(df_results)
+
+  #Create combo of Level #'s and 0's to merge with variable names (in list form)
+  dat_num <- base::list()
+  for (i in 1:dat_lev){
+    output <- c(base::rep(i,4),dat_0)
+    dat_num[[i]] <- output
+  }
+
+  #Combine variable name with level # (in list form)
+  var_names <- base::lapply(dat_num, function(x){
+    base::paste0(dat_name,x)
+  })
+
+  #Rename variables in dataset list
+  dat_revised <- base::lapply(base::seq_along(df_results), function(x){
+    base::colnames(df_results[[x]]) <- var_names[[x]]
+    #not sure why I need to mention it again but I do
+    df_results[[x]]
+  })
+
+  #Combine into one dataset
+  df_renamed <- do.call(base::cbind.data.frame,dat_revised)
+
+  #Remove the duplicate L0 info
+  df_renamed2 <- df_renamed[!base::duplicated(base::colnames(df_renamed))]
+
+  #Remove the "type" variable (unnecessary)
+  df_renamed3 <- df_renamed2[, -base::grep("Type",base::colnames(df_renamed2))]
+
+  #Reorder variables
+  df_renamed4 <- df_renamed3 %>%
+    dplyr::relocate(base::order(base::colnames(df_renamed3))) %>%            #gets numbers in order
+    dplyr::relocate(dplyr::starts_with("SRMR"),dplyr::starts_with("RMSEA"))    #gets fit indices in order
+
+  return(df_renamed4)
+}
+
 ############################################################################
 ################################# cfaFit ###################################
 ############################################################################

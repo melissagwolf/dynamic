@@ -16,7 +16,7 @@
 #' @param T_mli If you entered a \code{\link{lavaan}} object for n, leave this blank. Otherwise,
 #' enter your baseline chi-square.
 #' @param p If you entered a \code{\link{lavaan}} object for n, leave this blank. Otherwise,
-#' enter the number of parameters in your model.
+#' enter the number of observed variables in your model.
 #' @param manual If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
 #' If you manually entered each argument, set this to TRUE.
 #' @param plot Displays a simple plot that compares your T-size RMSEA and T-Size CFI to the adjusted
@@ -57,7 +57,7 @@ equivTest <- function(n,T_ml=NULL,df=NULL,T_mli=NULL,p=NULL,manual=FALSE,plot=FA
     T_ml=T_ml
     df=df
     T_mli=T_mli
-    n=n
+    n9=n
   }else{
     #Use this to rewrite error message for when someone forgot to use manual=TRUE
     #But entered in model statement and sample size
@@ -81,15 +81,16 @@ equivTest <- function(n,T_ml=NULL,df=NULL,T_mli=NULL,p=NULL,manual=FALSE,plot=FA
     #Use these functions to convert to manual (input is a lavaan object)
     #Probably what we should expect for people using R
     #need 'n' last because otherwise model will overwrite
+    #no longer need n last with n9
     T_ml <- equiv_T_ml(n)
     df <- equiv_df(n)
     T_mli <- equiv_T_mli(n)
     p <- equiv_p(n)
-    n <- equiv_n(n)
+    n9 <- equiv_n(n)
   }
 
   #Error for when someone doesn't enter all 5 arguments when they select manual=T
-  tryCatch(equiv_cutoffs(p,T_ml,df,T_mli,n),
+  tryCatch(equiv_cutoffs(p,T_ml,df,T_mli,n9),
            error=function(err3){
              if (grepl("non-numeric argument to binary operator", err3)){
                stop("dynamic Error: Did you enter all 5 arguments and select manual=TRUE?")
@@ -97,11 +98,24 @@ equivTest <- function(n,T_ml=NULL,df=NULL,T_mli=NULL,p=NULL,manual=FALSE,plot=FA
            })
 
   #Create list to store outputs (table and plot)
-  res <- list(input=as.list(environment),
-              output=list())
+  res <- list()
+
+  #Output fit indices if someone used manual=F
+  #Will ignore in print statement if manual=T
+  #Exclamation point is how we indicate if manual = T (because default is F)
+
+  if(!manual){
+    fitted <- round(lavaan::fitmeasures(n,c("chisq","df","pvalue","srmr","rmsea","cfi")),3)
+    fitted_m <- as.matrix(fitted)
+    fitted_t <- t(fitted_m)
+    fitted_t <- as.data.frame(fitted_t)
+    colnames(fitted_t) <- c("Chi-Square"," df","p-value","  SRMR","  RMSEA","   CFI")
+    rownames(fitted_t) <- c("")
+    res$fit <- fitted_t
+  }
 
   #Get data in
-  dat <- equiv_cutoffs(p,T_ml,df,T_mli,n)
+  dat <- equiv_cutoffs(p,T_ml,df,T_mli,n9)
 
   #Remove 0's
   clean <- lapply(dat, function(x) stringr::str_replace_all(x,"0\\.","."))
@@ -110,10 +124,10 @@ equivTest <- function(n,T_ml=NULL,df=NULL,T_mli=NULL,p=NULL,manual=FALSE,plot=FA
 
   ## Extract T-Size and save to list
   rmsea <- cut[1,5]
-  res$output$rmsea <- rmsea
+  res$rmsea <- rmsea
 
   cfi <- cut[2,5]
-  res$output$cfi <- cfi
+  res$cfi <- cfi
 
   ## Label cutoffs
   excellent <- "Excellent: "
@@ -137,11 +151,11 @@ equivTest <- function(n,T_ml=NULL,df=NULL,T_mli=NULL,p=NULL,manual=FALSE,plot=FA
   pf_r <- paste(poor,five_r,sep="")
 
   #Save to list
-  res$output$eo_r <- eo_r
-  res$output$ct_r <- ct_r
-  res$output$ft_r <- ft_r
-  res$output$mf_r <- mf_r
-  res$output$pf_r <- pf_r
+  res$eo_r <- eo_r
+  res$ct_r <- ct_r
+  res$ft_r <- ft_r
+  res$mf_r <- mf_r
+  res$pf_r <- pf_r
 
   #Create CFI Bins
   one_c <- paste(cut[2,1],"or below")
@@ -158,11 +172,11 @@ equivTest <- function(n,T_ml=NULL,df=NULL,T_mli=NULL,p=NULL,manual=FALSE,plot=FA
   pf_c <- paste(excellent,five_c,sep="")
 
   #Save to list
-  res$output$eo_c <- eo_c
-  res$output$ct_c <- ct_c
-  res$output$ft_c <- ft_c
-  res$output$mf_c <- mf_c
-  res$output$pf_c <- pf_c
+  res$eo_c <- eo_c
+  res$ct_c <- ct_c
+  res$ft_c <- ft_c
+  res$mf_c <- mf_c
+  res$pf_c <- pf_c
 
   if (plot){
 
@@ -244,8 +258,8 @@ equivTest <- function(n,T_ml=NULL,df=NULL,T_mli=NULL,p=NULL,manual=FALSE,plot=FA
             axis.ticks = element_blank(),
             axis.title = element_blank())
 
-    res$output$R_Plot <- rmsea_plot
-    res$output$C_Plot <- cfi_plot
+    res$R_Plot <- rmsea_plot
+    res$C_Plot <- cfi_plot
   }
 
   class(res) <- 'equivTest'
@@ -265,32 +279,41 @@ equivTest <- function(n,T_ml=NULL,df=NULL,T_mli=NULL,p=NULL,manual=FALSE,plot=FA
 
 print.equivTest <- function(x,...){
 
+  #Automatically return fit cutoffs
   cat("\n",
       "Your T-size RMSEA:",
-      x$output$rmsea,
+      x$rmsea,
       "\n","\n",
       "Adjusted RMSEA cutoff values: \n",
-      x$output$eo_r,"\n",
-      x$output$ct_r,"\n",
-      x$output$ft_r,"\n",
-      x$output$mf_r,"\n",
-      x$output$pf_r,
+      x$eo_r,"\n",
+      x$ct_r,"\n",
+      x$ft_r,"\n",
+      x$mf_r,"\n",
+      x$pf_r,
       "\n","\n",
-      "Your T-size CFI:", x$output$cfi,
+      "Your T-size CFI:", x$cfi,
       "\n","\n",
       "Adjusted CFI cutoff values: \n",
-      x$output$pf_c,"\n",
-      x$output$mf_c,"\n",
-      x$output$ft_c,"\n",
-      x$output$ct_c,"\n",
-      x$output$eo_c,"\n")
+      x$pf_c,"\n",
+      x$mf_c,"\n",
+      x$ft_c,"\n",
+      x$ct_c,"\n",
+      x$eo_c,"\n")
 
-  if(!is.null(x$output$R_Plot)){
+  #Only print fit indices from lavaan object if someone submits a lavaan object
+  if(!is.null(x$fit)){
+    base::cat("\n")
+
+    base::cat("Empirical fit indices: \n")
+    base::print(x$fit)
+  }
+
+  if(!is.null(x$R_Plot)){
 
     cat("\n",
         "The plots for each fit index are in the Plots tab")
-    print(x$output$R_Plot)
-    print(x$output$C_Plot)
+    print(x$R_Plot)
+    print(x$C_Plot)
   }
 
   #Hides this function

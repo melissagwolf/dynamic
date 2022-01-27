@@ -48,8 +48,8 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE){
 
   #If manual, expect manual (a la Shiny app)
   if(manual){
-    model=model
-    n=n
+    n <- n
+    model9 <- model
   }else{
     #Use this to rewrite error message for when someone forgot to use manual=TRUE
     #But entered in model statement and sample size
@@ -74,34 +74,48 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE){
     #Probably what we should expect for people using R
     #need 'n' first because otherwise model will overwrite
     n <- cfa_n(model)
-    model <- cfa_lavmod(model)
+    model9 <- cfa_lavmod(model)
 
   }
 
-  if (unstandardized(model)>0){
+  if (unstandardized(model9)>0){
     stop("dynamic Error: One of your loadings or correlations has an absolute value of 1 or above (an impossible value). Please use standardized loadings. If all of your loadings are under 1, try looking for a missing decimal somewhere in your model statement.")
   }
 
-  if (number_factor(model)<2){
+  if (number_factor(model9)<2){
     stop("dynamic Error: You entered a one-factor model.  Use cfaOne instead.")
   }
 
-  if (defre(model,n)==0){
+  if (defre(model9,n)==0){
     stop("dynamic Error: It is impossible to add misspecifications to a just identified model.")
   }
 
-  if ( nrow(multi_num_HB(model)) < (number_factor(model)-1)){
+  if (nrow(multi_num_HB(model9)) < (number_factor(model9)-1)){
     stop("dynamic Error: There are not enough free items to produce all misspecification levels.")
   }
 
   #Create list to store outputs (table and plot)
   res <- list()
 
+  #Output fit indices if someone used manual=F
+  #Will ignore in print statement if manual=T
+  #Exclamation point is how we indicate if manual = T (because default is F)
+
+  if(!manual){
+    fitted <- round(lavaan::fitmeasures(model,c("chisq","df","pvalue","srmr","rmsea","cfi")),3)
+    fitted_m <- as.matrix(fitted)
+    fitted_t <- t(fitted_m)
+    fitted_t <- as.data.frame(fitted_t)
+    colnames(fitted_t) <- c("Chi-Square"," df","p-value","  SRMR","  RMSEA","   CFI")
+    rownames(fitted_t) <- c("")
+    res$fit <- fitted_t
+  }
+
   #Run simulation
-  results <- multi_df_HB(model,n)
+  results <- multi_df_HB(model9,n)
 
   #Save the data and make it exportable
-  res$data <- results
+  res$data <- fit_data(results)
 
   #For each list element (misspecification) compute the cutoffs
   misspec_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_M=quantile(SRMR_M, c(.05,.1)),
@@ -150,7 +164,7 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE){
   #For row names
   #Can't use number_factor because some factors may be ineligible for cross-loadings
   #Instead, just grab the length of number of misspecifications we're adding
-  num_fact <- length(DGM_Multi_HB(model))
+  num_fact <- length(DGM_Multi_HB(model9))
 
   #Create row names for level
   Table_C$levelnum <- paste("Level", rep(1:num_fact,each=2))
@@ -159,7 +173,7 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE){
   Table_C$cut <- rep(c("95/5","90/10"))
 
   #Add cross-loading magnitude
-  suppressMessages(mag <- multi_add_HB(model) %>%
+  suppressMessages(mag <- multi_add_HB(model9) %>%
                      tidyr::separate(V1,into=c("a","b","Magnitude","d","e"),sep=" ") %>%
                      select(Magnitude) %>%
                      mutate(Magnitude=as.numeric(Magnitude),
@@ -328,8 +342,17 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE){
 #Need to add ... param or will get error message in CMD check
 print.cfaHB <- function(x,...){
 
+  #Automatically return fit cutoffs
   base::cat("Your DFI cutoffs: \n")
   base::print(x$cutoffs)
+
+  #Only print fit indices from lavaan object if someone submits a lavaan object
+  if(!is.null(x$fit)){
+    base::cat("\n")
+
+    base::cat("Empirical fit indices: \n")
+    base::print(x$fit)
+  }
 
   if(!is.null(x$plots)){
 
