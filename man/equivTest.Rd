@@ -30,7 +30,7 @@ enter your model degrees of freedom.}
 enter your baseline chi-square.}
 
 \item{p}{If you entered a \code{\link{lavaan}} object for n, leave this blank. Otherwise,
-enter the number of parameters in your model.}
+enter the number of observed variables in your model.}
 
 \item{manual}{If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
 If you manually entered each argument, set this to TRUE.}

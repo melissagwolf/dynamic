@@ -420,7 +420,7 @@ multi_factor <- function(model){
   MaxAllow <- ((sqrt((L1_Sq*F1_Sq)+E)-(abs(L1*F1)))*.95)
 
   #extract value of loading
-  Final_Loading <- round(min(L1,MaxAllow),4)
+  Final_Loading <- round(min(abs(L1),abs(MaxAllow)),4)
 
   #Create model DF
   Cross_Loading <- modinfo %>%
@@ -1017,7 +1017,7 @@ multi_add_HB <- function(model){
                   E=1-L1_Sq) %>%
     dplyr::mutate(MaxAllow=((base::sqrt(((L1_Sq*F1_Sq)+E))-(abs(L1*F1)))*.95),
                   MaxAllow2=base::round(MaxAllow,digits=4),
-                  Final_Loading=base::pmin(Loading,MaxAllow2),
+                  Final_Loading=base::pmin(abs(Loading),abs(MaxAllow2)),
                   times="*") %>%
     dplyr::select(rhs,operator,Final_Loading,times,Item) %>%
     tidyr::unite("V1",sep=" ")

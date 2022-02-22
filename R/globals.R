@@ -64,7 +64,24 @@ utils::globalVariables(c(
   'Type_M' ,
   'Type_T',
   'ustart',
-  'V1'
+  'V1',
+  'dat_name',
+  'dat_0',
+  'dat_lev',
+  'dat_num',
+  'var_names',
+  'dat_revised',
+  'df_results',
+  'df_renamed',
+  'df_renamed2',
+  'df_renamed3',
+  'df_renamed4',
+  'fitted',
+  'fitted_m',
+  'fitted_t',
+  'fitted_t',
+  'results'
+
 ))
 
 

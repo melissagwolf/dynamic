@@ -18,7 +18,7 @@ Otherwise, enter your sample size (numeric).}
 
 \item{reps}{The number of replications used in your simulation (default is 1000).}
 
-\item{plot}{Displays distributions of fit indices for each level of misspecification.}
+\item{plot}{Displays distributions of fit indices for each fit index.}
 
 \item{manual}{If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
 If you manually entered standardized loadings and sample size, set this to TRUE.}
