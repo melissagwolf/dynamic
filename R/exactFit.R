@@ -35,14 +35,6 @@
 #'            F3 =~ x7 + x8 + x9"
 #' fit <- lavaan::cfa(lavmod,dat)
 #' exactFit(fit)
-#'
-#' #Manual entry example (manual=TRUE)
-#' manmod <- "F1 =~ .602*Y1 + .805*Y2 + .516*Y3 + .857*Y4
-#'            F2 =~ .413*Y5 + -.631*Y6
-#'            F1 ~~ .443*F2
-#'            Y4 ~~ .301*Y5"
-#' exactFit(manmod,500,manual=TRUE)
-
 exactFit <- function(model,n,reps=1000,plot=FALSE,manual=FALSE){
 
   #If manual, expect manual (a la Shiny app)

@@ -17,6 +17,7 @@
 #' @import dplyr lavaan simstandard ggplot2 stringr
 #' @importFrom purrr map map_dfr map2
 #' @importFrom tidyr unite extract
+#' @importFrom patchwork plot_layout plot_annotation wrap_plots
 #'
 #' @author Melissa G Wolf & Daniel McNeish
 #'
@@ -33,10 +34,6 @@
 #' lavmod <- "F1 =~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9"
 #' fit <- lavaan::cfa(lavmod,dat)
 #' cfaOne(fit)
-#'
-#' #Manual entry example (manual=TRUE)
-#' manmod <- "F1 =~ .602*Y1 + .805*Y2 + .857*Y3 + .631*Y4 + .345*Y5 + .646*Y6"
-#' cfaOne(manmod,500,manual=TRUE)
 cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE){
 
   #If manual, expect manual (a la Shiny app)

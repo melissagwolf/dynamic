@@ -43,14 +43,6 @@ lavmod <- "F1 =~ x1 + x2 + x3
            F3 =~ x7 + x8 + x9"
 fit <- lavaan::cfa(lavmod,dat)
 cfaHB(fit)
-
-#Manual entry example (manual=TRUE)
-manmod <- "F1 =~ .602*Y1 + .805*Y2 + .516*Y3 + .857*Y4
-           F2 =~ .413*Y5 + -.631*Y6
-           F1 ~~ .443*F2
-           Y4 ~~ .301*Y5"
-cfaHB(manmod,500,manual=TRUE)
-
 }
 \author{
 Melissa G Wolf & Daniel McNeish

@@ -1,16 +1,17 @@
 Package: dynamic
 Type: Package
-Title: Dynamic Fit Index Cutoffs For Latent Variable Models
+Title: DFI Cutoffs for Latent Variable Models
 Version: 1.1.0
 Authors@R: c(
-  person("Melissa", "G. Wolf", email = "melisssagordon@ucsb.edu",
+  person("Melissa", "G. Wolf", email = "missgord@gmail.com",
   role = c("aut", "cre")),
   person("Daniel", "McNeish", email = "dmcneish@asu.edu",
   role = "aut"))
-Description: This package outputs model fit index cutoffs for latent variable models 
+Description: Returns dynamic fit index (DFI) cutoffs for latent variable models 
     that are tailored to the user's model statement, model type, and sample size.  
-    This is the counterpart of the Shiny Application, \url{https://dynamicfit.app}.
+    This is the counterpart of the Shiny Application, <https://dynamicfit.app>.
 License: AGPL-3
+Language: en-US
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.2

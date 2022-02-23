@@ -24,19 +24,18 @@ This is the counterpart of the Shiny Application, [dynamicfit.app](https://dynam
 
 ## Installation
 
-This is the beta version of the package.  Please submit bug reports and issues on GitHub.  You can install the beta version of dynamic from [Github](https://github.com) with:
+This is the beta version of the package.  Please submit bug reports and issues on GitHub.  You can install the released version of dynamic from [CRAN](https://CRAN.R-project.org) with:
 
-```r
-library(devtools)
-devtools::install_github("melissagwolf/dynamic")
-```
+`install.packages("dynamic")`
 
 ```{r echo=FALSE,eval=FALSE}
-#Add this when it's on CRAN
+#Original from Github release
 
-#You can install the released version of dynamic from #[CRAN](https://CRAN.R-project.org) with:
+#This is the beta version of the package.  Please submit bug reports and issues on GitHub.  You can install the beta version of dynamic from [Github](https://github.com) with:
 
-#install.packages("dynamic")
+
+#library(devtools)
+#devtools::install_github("melissagwolf/dynamic")
 ```
 
 ## Example

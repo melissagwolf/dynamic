@@ -41,10 +41,6 @@ dat <- lavaan::HolzingerSwineford1939
 lavmod <- "F1 =~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9"
 fit <- lavaan::cfa(lavmod,dat)
 cfaOne(fit)
-
-#Manual entry example (manual=TRUE)
-manmod <- "F1 =~ .602*Y1 + .805*Y2 + .857*Y3 + .631*Y4 + .345*Y5 + .646*Y6"
-cfaOne(manmod,500,manual=TRUE)
 }
 \author{
 Melissa G Wolf & Daniel McNeish

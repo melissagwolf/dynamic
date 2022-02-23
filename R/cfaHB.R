@@ -18,6 +18,7 @@
 #' @importFrom purrr map map_dfr map2
 #' @importFrom tidyr unite separate extract
 #' @importFrom tibble column_to_rownames
+#' @importFrom patchwork plot_layout plot_annotation wrap_plots
 #'
 #' @author Melissa G Wolf & Daniel McNeish
 #'
@@ -36,14 +37,6 @@
 #'            F3 =~ x7 + x8 + x9"
 #' fit <- lavaan::cfa(lavmod,dat)
 #' cfaHB(fit)
-#'
-#' #Manual entry example (manual=TRUE)
-#' manmod <- "F1 =~ .602*Y1 + .805*Y2 + .516*Y3 + .857*Y4
-#'            F2 =~ .413*Y5 + -.631*Y6
-#'            F1 ~~ .443*F2
-#'            Y4 ~~ .301*Y5"
-#' cfaHB(manmod,500,manual=TRUE)
-#'
 cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE){
 
   #If manual, expect manual (a la Shiny app)

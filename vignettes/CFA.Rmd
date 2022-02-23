@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-This package was created as supplemental material for *Dynamic Fit Index Cutoffs for Confirmatory Factor Analysis Models*, recently published in [Psych Methods](https://psycnet.apa.org/record/2021-98816-001){target="_parent"} and also accessible on [PsyArXiv](https://psyarxiv.com/v8yru){target="_parent"}. This package computes fit index cutoffs for CFA models that are tailored to the user's model statement and sample size. This enables the user to estimate the extent of misspecification(s) in their particular model.  
+This package was created as supplemental material for *Dynamic Fit Index Cutoffs for Confirmatory Factor Analysis Models*, recently published in Psych Methods and openly accessible on [PsyArXiv](https://psyarxiv.com/v8yru){target="_parent"}. This package computes fit index cutoffs for CFA models that are tailored to the user's model statement and sample size. This enables the user to estimate the extent of misspecification(s) in their particular model.  
 
 - The misspecifications for the multi-factor CFA model, `cfaHB`, are defined conventionally in line with Hu & Bentler's (1999) approach to misspecification.  The DFI cutoff approach expands upon Hu & Bentler's method to include multiple levels of misspecification (one level for each F-1 factor, where F is the number of factors in the model).
 
@@ -45,14 +45,26 @@ fit <- lavaan::cfa(model=lavmod,data=dat)
 
 The `lavaan` object, `fit`, would then be used as the sole argument for `cfaHB` (since this is a multi-factor model).  This will run a simulation with 500 replications per level to compute the DFI cutoffs tailored to this specific model, and return the two levels of misspecifications for the SRMR, RMSEA, and CFI.  It will also include the magnitude of each missing cross-loading from the data generating model, to give the user an idea of the severity of the misspecification.  Because we requested the plots with `plot=TRUE`, there will be two plots with distributions of fit indices - one for each level of misspecification.  
 
-```{r fig.height=3, fig.width=7, message=FALSE, warning=FALSE}
+```{r fig.height=3, fig.width=7, message=FALSE, warning=FALSE, eval=FALSE, echo=FALSE}
 library(dynamic)
 dynamic::cfaHB(fit, plot = TRUE)
 ```
 
+```{r out.width="100%", message=FALSE, warning=FALSE, echo=FALSE}
+knitr::include_graphics("One.png")
+```
+
+```{r out.width="100%", message=FALSE, warning=FALSE, echo=FALSE}
+knitr::include_graphics("Two.png")
+```
+
+```{r out.width="100%", message=FALSE, warning=FALSE, echo=FALSE}
+knitr::include_graphics("Three.png")
+```
+
 The SRMR for this model was .065, while the RMSEA was .092 and the CFI was .931 (these are found by running `fitMeasures(fit)`).  The SRMR and RMSEA exceed the Level-1 and Level-2 cutoff values, and the CFI falls below the Level-1 and Level-2 cutoff values.  This means that the fit for this model is equivalent to *at least* two missing cross-loadings in the data generating model, one with a magnitude of .424 and the second with a magnitude of .570.  This model would not have fit well by Hu & Bentler's traditional cutoffs (SRMR < .08, RMSEA < .06, CFI > .95), but the fit is even poorer when compared to the DFI cutoffs tailored to the user's model.
 
-Note that there are no cutoffs available at Level-1 for the 95/5 criteria.  This is because the fit index distributions for the misspecified and true models overlap too much to return a cutoff value that can correctly identify a misspecified model as misspeified 95% of the time while also correctly identifying a correctly specified model as correctly specified 95% of the time.  You can see this overlap on Level 1 figures. Note that for Level-2, the distributions are much further apart.
+Note that there are no cutoffs available at Level-1 for the 95/5 criteria.  This is because the fit index distributions for the misspecified and true models overlap too much to return a cutoff value that can correctly identify a misspecified model as misspecified 95% of the time while also correctly identifying a correctly specified model as correctly specified 95% of the time.  You can see this overlap on Level 1 figures. Note that for Level-2, the distributions are much further apart.
 
 ## Example with manual input (manual=TRUE)
 
@@ -60,35 +72,39 @@ Each function can also accommodate those that did not analyze their CFA models u
 
 Again, we will rely on the `HolzingerSwineford1939` dataset that is built into the `lavaan` package.  This time, we will pretend that the hypothesized model is a one-factor model with 6 items.  We run a one-factor CFA, extract the standardized loadings, and use them to write the model statement `manmod`.  We then enter the sample size from the dataset (301), and select `manual=TRUE`.  Because we did not request any plots, none will appear.
 
-```{r fig.height=3, fig.width=7}
+```{r fig.height=3, fig.width=7, message=FALSE, warning=FALSE, eval=FALSE, echo=FALSE}
 manmod <- "visualtextual =~ .419*x1 + .212*x2 + .203*x3 + .852*x4 + .847*x5 + .840*x6"
 n <- 301
 dynamic::cfaOne(model=manmod,n=n,manual=TRUE)
+```
+
+```{r out.width="100%", message=FALSE, warning=FALSE, echo=FALSE}
+knitr::include_graphics("Four.png")
 ```
 
 The SRMR for this model was .114, while the RMSEA was .187 and the CFI was .856.  The SRMR and RMSEA exceed the Level-1, Level-2, and Level-3 cutoff values, and the CFI falls below the Level-1, Level-2 and Level-3 cutoff values.  This means that the fit of this model is equivalent to *at least* all of the items having one missing correlation with another item (at a magnitude of .3), implying that the hypothesized model may not fit the data.  It is worth noting that this model also would not have fit well by Hu & Bentler's traditional cutoffs (SRMR < .08, RMSEA < .06, CFI > .95).
 
 ## Shiny Application
 
-There is a Shiny app counterpart to this package.  It can be found at [dynamicfit.app](https://dynamicfit.app/cfa){target="_parent"}.  The package and the app are identical and will produce the same results.
+There is a Shiny app counterpart to this package.  It can be found at [dynamicfit.app](https://dynamicfit.app/){target="_parent"}.  The package and the app are identical and will produce the same results.
 
 ## Citation Recommendations
 
 To cite the ideas behind dynamic model fit index cutoff values:
 
-- [McNeish, D.](https://sites.google.com/site/danielmmcneish/home){target="_parent"} & [Wolf, M. G.](https://www.melissagwolf.com/){target="_parent"} (2021). Dynamic Fit Index Cutoffs for Confirmatory Factor Analysis Models.
-*Psychological Methods*. [https://doi.org/10.1037/met0000425](https://psycnet.apa.org/record/2021-98816-001){target="_parent"}
+- [McNeish, D.](https://sites.google.com/site/danielmmcneish){target="_parent"} & [Wolf, M. G.](https://www.melissagwolf.com/){target="_parent"} (2021). Dynamic Fit Index Cutoffs for Confirmatory Factor Analysis Models.
+*Psychological Methods*. 
 
     - [*PsyArXiv link*](https://psyarxiv.com/v8yru/){target="_parent"}
 
 To cite the dynamic model index cutoff values generated by this app:
 
-- [Wolf, M. G.](https://www.melissagwolf.com/){target="_parent"} & [McNeish, D.](https://sites.google.com/site/danielmmcneish/home){target="_parent"} (2020). Dynamic Model Fit. R Shiny application version 1.1.0.
+- [Wolf, M. G.](https://www.melissagwolf.com/){target="_parent"} & [McNeish, D.](https://sites.google.com/site/danielmmcneish/){target="_parent"} (2020). Dynamic Model Fit. R Shiny application version 1.1.0.
 
 
   
 ## This package relies on the following packages:
 
-- [lavaan](http://www.jstatsoft.org/v48/i02/){target="_parent"}. Rosseel, Y. (2012). lavaan: An R Package for Structural Equation Modeling. Journal of Statistical Software, 48(2), 1-36.
+- [lavaan](https://www.jstatsoft.org/article/view/v048i02){target="_parent"}. Rosseel, Y. (2012). lavaan: An R Package for Structural Equation Modeling. Journal of Statistical Software, 48(2), 1-36.
 - [simstandard](https://CRAN.R-project.org/package=simstandard){target="_parent"}. Schneider, W. J. (2019). simstandard: Generate Standardized Data. R package version 0.3.0. 
 - [tidyverse](https://doi.org/10.21105/joss.01686){target="_parent"}. Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686.
