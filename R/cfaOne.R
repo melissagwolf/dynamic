@@ -13,6 +13,8 @@
 #' @param plot Displays distributions of fit indices for each level of misspecification.
 #' @param manual If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
 #' If you manually entered standardized loadings and sample size, set this to TRUE.
+#' @param reps (**Do not modify this**): The number of replications used in your simulation. This is set to 500 by default in both the
+#' R package and the corresponding Shiny App.
 #'
 #' @import dplyr lavaan simstandard ggplot2 stringr
 #' @importFrom purrr map map_dfr map2
@@ -33,8 +35,13 @@
 #' dat <- lavaan::HolzingerSwineford1939
 #' lavmod <- "F1 =~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9"
 #' fit <- lavaan::cfa(lavmod,dat)
-#' cfaOne(fit)
-cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE){
+#' \donttest{cfaOne(fit)}
+#'
+#' #Manual entry example for a sample size of 300 (manual=TRUE)
+#' manmod <- "F1 =~ .602*Y1 + .805*Y2 + .857*Y3 + .631*Y4 + .345*Y5 + .646*Y6"
+#' \donttest{cfaOne(model=manmod,n=300,manual=TRUE)}
+#'
+cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=500){
 
   #If manual, expect manual (a la Shiny app)
   if(manual){
@@ -101,7 +108,7 @@ cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE){
   }
 
   #Run simulation
-  results <- one_df(model9,n)
+  results <- one_df(model9,n,reps)
 
   #Save the data and make it exportable
   res$data <- fit_data(results)

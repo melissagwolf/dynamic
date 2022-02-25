@@ -13,6 +13,8 @@
 #' @param plot Displays distributions of fit indices for each level of misspecification.
 #' @param manual If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
 #' If you manually entered standardized loadings and sample size, set this to TRUE.
+#' @param reps (**Do not modify this**): The number of replications used in your simulation. This is set to 500 by default in both the
+#' R package and the corresponding Shiny App.
 #'
 #' @import dplyr lavaan simstandard ggplot2 stringr
 #' @importFrom purrr map map_dfr map2
@@ -22,7 +24,7 @@
 #'
 #' @author Melissa G Wolf & Daniel McNeish
 #'
-#' Maintainer: Melissa G Wolf <melissagordon@ucsb.edu>
+#' Maintainer: Melissa G Wolf <missgord@gmail.com>
 #'
 #' @rdname cfaHB
 #'
@@ -36,8 +38,16 @@
 #'            F2 =~ x4 + x5 + x6
 #'            F3 =~ x7 + x8 + x9"
 #' fit <- lavaan::cfa(lavmod,dat)
-#' cfaHB(fit)
-cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE){
+#' \donttest{cfaHB(fit)}
+#'
+#' #Manual entry example for a sample size of 400 (manual=TRUE)
+#' manmod <- "F1 =~ .602*Y1 + .805*Y2 + .516*Y3 + .415*Y4
+#'            F2 =~ .413*Y5 + -.631*Y6
+#'            F1 ~~ .443*F2
+#'            Y4 ~~ .301*Y5"
+#' \donttest{exactFit(model=manmod,n=400,manual=TRUE)}
+#'
+cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=500){
 
   #If manual, expect manual (a la Shiny app)
   if(manual){
@@ -105,7 +115,7 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE){
   }
 
   #Run simulation
-  results <- multi_df_HB(model9,n)
+  results <- multi_df_HB(model9,n,reps)
 
   #Save the data and make it exportable
   res$data <- fit_data(results)

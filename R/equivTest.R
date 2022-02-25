@@ -41,6 +41,15 @@
 #'            F3 =~ x7 + x8 + x9"
 #' fit <- lavaan::cfa(lavmod,dat)
 #' equivTest(fit)
+#'
+#' #' #Manual entry example (manual=TRUE)
+#' n <- 301
+#' T_ml <- 85.306
+#' df <- 24
+#' T_mli <- 918.852
+#' p <- 9
+#' equivTest(n,T_ml,df,T_mli,p,manual=TRUE)
+#'
 equivTest <- function(n,T_ml=NULL,df=NULL,T_mli=NULL,p=NULL,manual=FALSE,plot=FALSE){
 
   #if manual, expect manual (a la shiny app)

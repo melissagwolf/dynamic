@@ -5,7 +5,7 @@
 \alias{print.cfaOne}
 \title{Dynamic fit index (DFI) cutoffs for one-factor CFA models}
 \usage{
-cfaOne(model, n = NULL, plot = FALSE, manual = FALSE)
+cfaOne(model, n = NULL, plot = FALSE, manual = FALSE, reps = 500)
 
 \method{print}{cfaOne}(x, ...)
 }
@@ -20,6 +20,9 @@ Otherwise, enter your sample size (numeric).}
 
 \item{manual}{If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
 If you manually entered standardized loadings and sample size, set this to TRUE.}
+
+\item{reps}{(**Do not modify this**): The number of replications used in your simulation. This is set to 500 by default in both the
+R package and the corresponding Shiny App.}
 
 \item{x}{cfaOne object}
 
@@ -40,7 +43,12 @@ The app-based version of this function can be found at \href{https://dynamicfit.
 dat <- lavaan::HolzingerSwineford1939
 lavmod <- "F1 =~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9"
 fit <- lavaan::cfa(lavmod,dat)
-cfaOne(fit)
+\donttest{cfaOne(fit)}
+
+#Manual entry example for a sample size of 300 (manual=TRUE)
+manmod <- "F1 =~ .602*Y1 + .805*Y2 + .857*Y3 + .631*Y4 + .345*Y5 + .646*Y6"
+\donttest{cfaOne(model=manmod,n=300,manual=TRUE)}
+
 }
 \author{
 Melissa G Wolf & Daniel McNeish

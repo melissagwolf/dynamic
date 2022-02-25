@@ -5,7 +5,7 @@
 \alias{print.cfaHB}
 \title{Dynamic fit index (DFI) cutoffs adapted from Hu & Bentler (1999) for multi-factor CFA models}
 \usage{
-cfaHB(model, n = NULL, plot = FALSE, manual = FALSE)
+cfaHB(model, n = NULL, plot = FALSE, manual = FALSE, reps = 500)
 
 \method{print}{cfaHB}(x, ...)
 }
@@ -20,6 +20,9 @@ Otherwise, enter your sample size (numeric).}
 
 \item{manual}{If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
 If you manually entered standardized loadings and sample size, set this to TRUE.}
+
+\item{reps}{(**Do not modify this**): The number of replications used in your simulation. This is set to 500 by default in both the
+R package and the corresponding Shiny App.}
 
 \item{x}{cfaHB object}
 
@@ -42,10 +45,18 @@ lavmod <- "F1 =~ x1 + x2 + x3
            F2 =~ x4 + x5 + x6
            F3 =~ x7 + x8 + x9"
 fit <- lavaan::cfa(lavmod,dat)
-cfaHB(fit)
+\donttest{cfaHB(fit)}
+
+#Manual entry example for a sample size of 400 (manual=TRUE)
+manmod <- "F1 =~ .602*Y1 + .805*Y2 + .516*Y3 + .415*Y4
+           F2 =~ .413*Y5 + -.631*Y6
+           F1 ~~ .443*F2
+           Y4 ~~ .301*Y5"
+\donttest{exactFit(model=manmod,n=400,manual=TRUE)}
+
 }
 \author{
 Melissa G Wolf & Daniel McNeish
 
-Maintainer: Melissa G Wolf <melissagordon@ucsb.edu>
+Maintainer: Melissa G Wolf <missgord@gmail.com>
 }

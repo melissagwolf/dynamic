@@ -8,10 +8,11 @@
 #' OR a model statement written in \code{\link{lavaan}} \code{\link{model.syntax}} with standardized loadings.
 #' @param n If you entered a \code{\link{lavaan}} object for model, leave this blank.
 #' Otherwise, enter your sample size (numeric).
-#' @param reps The number of replications used in your simulation (default is 1000).
 #' @param plot Displays distributions of fit indices for each fit index.
 #' @param manual If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
 #' If you manually entered standardized loadings and sample size, set this to TRUE.
+#' @param reps (**Do not modify this**): The number of replications used in your simulation. This is set to 500 by default in both the
+#' R package and the corresponding Shiny App (not yet available).
 #'
 #' @import dplyr lavaan simstandard
 #' @importFrom purrr map map_dfr
@@ -20,7 +21,7 @@
 #'
 #' @author Melissa G Wolf & Daniel McNeish
 #'
-#' Maintainer: Melissa G Wolf <melissagordon@ucsb.edu>
+#' Maintainer: Melissa G Wolf <missgord@gmail.com>
 #'
 #' @rdname exactFit
 #'
@@ -34,8 +35,16 @@
 #'            F2 =~ x4 + x5 + x6
 #'            F3 =~ x7 + x8 + x9"
 #' fit <- lavaan::cfa(lavmod,dat)
-#' exactFit(fit)
-exactFit <- function(model,n,reps=1000,plot=FALSE,manual=FALSE){
+#' \donttest{exactFit(fit)}
+#'
+#' #Manual entry example for a sample size of 400 (manual=TRUE)
+#' manmod <- "F1 =~ .602*Y1 + .805*Y2 + .516*Y3 + .415*Y4
+#'            F2 =~ .413*Y5 + -.631*Y6
+#'            F1 ~~ .443*F2
+#'            Y4 ~~ .301*Y5"
+#' \donttest{exactFit(model=manmod,n=400,manual=TRUE)}
+#'
+exactFit <- function(model,n,plot=FALSE,manual=FALSE,reps=500){
 
   #If manual, expect manual (a la Shiny app)
   if(manual){

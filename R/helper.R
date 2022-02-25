@@ -339,7 +339,7 @@ DGM_one <- function(model){
 ### One-factor: Simulate fit indices for misspecified model for all levels ###
 ## This name is new!!!
 
-one_fit <- function(model,n){
+one_fit <- function(model,n,reps){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -353,13 +353,16 @@ one_fit <- function(model,n){
   #Set seed
   set.seed(649364)
 
+  #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
+  r <- reps
+
   #Simulate one large dataset for each misspecification (use map to apply across each
   #element (set of misspecifications) in the list)
-  all_data_misspec <- purrr::map(misspec_dgm,~simstandard::sim_standardized(m=.,n=n*500,
+  all_data_misspec <- purrr::map(misspec_dgm,~simstandard::sim_standardized(m=.,n=n*r,
                                                                             latent=FALSE,errors=FALSE))
 
   #Create indicator to split into 500 datasets for 500 reps
-  rep_id_misspec <- base::rep(1:500,n)
+  rep_id_misspec <- base::rep(1:r,n)
 
   #Combine indicator with dataset
   dat_rep_misspec <- purrr::map(all_data_misspec,~base::cbind(.,rep_id_misspec))
@@ -392,7 +395,7 @@ one_fit <- function(model,n){
 #### One_Factor: Function to create True DGM (aka, just the model the user read in) ####
 ## This name is new!!
 
-true_fit_one <- function(model,n){
+true_fit_one <- function(model,n,reps){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -405,13 +408,16 @@ true_fit_one <- function(model,n){
   #Set Seed
   set.seed(326267)
 
+  #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
+  r <- reps
+
   #Simulate one large dataset
-  all_data_true <- simstandard::sim_standardized(m=true_dgm,n = n*500,
+  all_data_true <- simstandard::sim_standardized(m=true_dgm,n = n*r,
                                                  latent = FALSE,
                                                  errors = FALSE)
 
   #Create indicator to split into 500 datasets for 500 reps
-  rep_id_true <- base::rep(1:500,n)
+  rep_id_true <- base::rep(1:r,n)
 
   #Combine indicator with dataset
   dat_rep_true <- base::cbind(all_data_true,rep_id_true)
@@ -440,16 +446,16 @@ true_fit_one <- function(model,n){
 #### One-Factor: Function to combine both model fit stats for all levels into one dataframe ####
 ## New name!!
 
-one_df <- function(model,n){
+one_df <- function(model,n,reps){
 
   #Use max sample size of 2000
   n <- min(n,2000)
 
   #Get fit stats for misspecified model
-  misspec_fit <- one_fit(model,n)
+  misspec_fit <- one_fit(model,n,reps)
 
   #Get fit stats for correctly specified model
-  true_fit <- true_fit_one(model,n)
+  true_fit <- true_fit_one(model,n,reps)
 
   #Produce final table by level
   Table <- purrr::map(misspec_fit,~cbind(.,true_fit))
@@ -703,7 +709,7 @@ DGM_Multi_HB <- function(model){
 ### Multi-factor: Simulate fit indices for misspecified model for all levels ###
 ## This name is new!!!
 
-multi_fit_HB <- function(model,n){
+multi_fit_HB <- function(model,n,reps){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -717,13 +723,16 @@ multi_fit_HB <- function(model,n){
   #Set seed
   set.seed(269854)
 
+  #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
+  r <- reps
+
   #Simulate one large dataset for each misspecification (use map to apply across each
   #element (set of misspecifications) in the list)
-  all_data_misspec <- purrr::map(misspec_dgm,~simstandard::sim_standardized(m=.,n=n*500,
+  all_data_misspec <- purrr::map(misspec_dgm,~simstandard::sim_standardized(m=.,n=n*r,
                                                                             latent=FALSE,errors=FALSE))
 
   #Create indicator to split into 500 datasets for 500 reps
-  rep_id_misspec <- rep(1:500,n)
+  rep_id_misspec <- rep(1:r,n)
 
   #Combine indicator with dataset for each element in list
   dat_rep_misspec <- purrr::map(all_data_misspec,~cbind(.,rep_id_misspec))
@@ -756,7 +765,7 @@ multi_fit_HB <- function(model,n){
 #### Multi_Factor: Function to create True DGM (aka, just the model the user read in) ####
 ## This name is new!!
 
-true_fit_HB <- function(model,n){
+true_fit_HB <- function(model,n,reps){
 
   #Can make this faster by only doing it once
   #Would need to change table. Not sure what would happen to plot.
@@ -771,16 +780,19 @@ true_fit_HB <- function(model,n){
   #Use max sample size of 10000
   n <- base::min(n,2000)
 
+  #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
+  r <- reps
+
   #Set Seed
   set.seed(267326)
 
   #Simulate one large dataset
-  all_data_true <- simstandard::sim_standardized(m=true_dgm,n = n*500,
+  all_data_true <- simstandard::sim_standardized(m=true_dgm,n = n*r,
                                                  latent = FALSE,
                                                  errors = FALSE)
 
   #Create indicator to split into 500 datasets for 500 reps
-  rep_id_true <- base::rep(1:500,n)
+  rep_id_true <- base::rep(1:r,n)
 
   #Combine indicator with dataset
   dat_rep_true <- base::cbind(all_data_true,rep_id_true)
@@ -809,16 +821,16 @@ true_fit_HB <- function(model,n){
 #### Multi-Factor: Function to combine both model fit stats for all levels into one dataframe ####
 ## New name!!
 
-multi_df_HB <- function(model,n){
+multi_df_HB <- function(model,n,reps){
 
   #Use max sample size of 2000
   n <- min(n,2000)
 
   #Get fit stats for misspecified model
-  misspec_fit <- multi_fit_HB(model,n)
+  misspec_fit <- multi_fit_HB(model,n,reps)
 
   #Get fit stats for correctly specified model
-  true_fit <- true_fit_HB(model,n)
+  true_fit <- true_fit_HB(model,n,reps)
 
   #Produce final table of fit indices for each level (as a list)
   Table <- purrr::map(misspec_fit,~cbind(.,true_fit))
@@ -979,7 +991,7 @@ exact_fit_dat <- function(model,n,reps){
   n <- base::min(n,2000)
 
   #Set Seed
-  set.seed(793267)
+  set.seed(267326)
 
   #Number of reps
   r <- reps
