@@ -377,8 +377,9 @@ catOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLS
 
 }
 
-#' @method print cfaOne
-#' @param x catOne object
+
+#' @method print catOne
+#' @param x cfaOne object
 #' @param ... other print parameters
 #' @rdname catOne
 #' @export
@@ -386,7 +387,7 @@ catOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLS
 #Print suppression/organization statement for list
 #Needs same name as class, not function name
 #Need to add ... param or will get error message in CMD check
-print.catOne <- function(x,...){
+print.cfaOne <- function(x,...){
 
   #Automatically return fit cutoffs
   base::cat("Your DFI cutoffs: \n")
@@ -399,6 +400,11 @@ print.catOne <- function(x,...){
     base::cat("Empirical fit indices: \n")
     base::print(x$fit)
   }
+
+  base::cat("\n Notes:
+  -'Sensitivity' is % of hypothetically misspecified models correctly identified by cutoff in DFI simulation
+  -Cutoffs with 95% sensitivity are reported when possible
+  -If sensitivity is <50%, cutoffs will be supressed \n")
 
   if(!is.null(x$plots)){
 
