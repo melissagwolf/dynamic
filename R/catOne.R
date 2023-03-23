@@ -379,7 +379,7 @@ catOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLS
 
 
 #' @method print catOne
-#' @param x cfaOne object
+#' @param x catOne object
 #' @param ... other print parameters
 #' @rdname catOne
 #' @export
