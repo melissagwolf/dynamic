@@ -48,7 +48,7 @@
 #'            Y4 ~~ .301*Y5"
 #' \donttest{exactFit(model=manmod,n=400,manual=TRUE)}
 #'
-cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=500, estimator="ML"){
+cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500){
 #test
   #If manual, expect manual (a la Shiny app)
   if(manual){
