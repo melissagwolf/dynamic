@@ -14,7 +14,7 @@ catOne(
   estimator = "WLSMV"
 )
 
-\method{print}{cfaOne}(x, ...)
+\method{print}{catOne}(x, ...)
 }
 \arguments{
 \item{model}{This can either be a \code{\link{lavaan}} object from the \code{\link{cfa}} function,
@@ -33,7 +33,7 @@ R package and the corresponding Shiny App.}
 
 \item{estimator}{Which estimator to use within the simulations (enter in quotes). The default is WLSMV. Only limited-information estimators that produce fit indices are permitted (i.e., maximum likelihood is not available)}
 
-\item{x}{cfaOne object}
+\item{x}{catOne object}
 
 \item{...}{other print parameters}
 }
@@ -41,7 +41,7 @@ R package and the corresponding Shiny App.}
 Dynamic fit index (DFI) cutoffs for SRMR, RMSEA, and CFI.
 }
 \description{
-This function generates DFI cutoffs for one-factor CFA models that treat items as categorical. 
+This function generates DFI cutoffs for one-factor CFA models that treat items as categorical.
 The default argument is a singular argument: a \code{\link{lavaan}} object from the \code{\link{cfa}} function.
 The function can also accommodate manual entry of the model statement and sample size (including threshold estimates).
 
@@ -109,7 +109,7 @@ bfi_e8 | 0.77*t5"
 
 }
 \author{
-Daniel McNeish & Melissa G Wolf 
+Daniel McNeish & Melissa G Wolf
 
 Maintainer: Daniel McNeish <dmcneish@asu.edu>
 }
