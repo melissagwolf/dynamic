@@ -15,6 +15,7 @@
 #' If you manually entered standardized loadings and sample size, set this to TRUE.
 #' @param reps (**Do not modify this**): The number of replications used in your simulation. This is set to 500 by default in both the
 #' R package and the corresponding Shiny App.
+#' @param estimator Which estimator to use within the simulations (enter in quotes). The default is maximum likelihood. 
 #'
 #' @import dplyr lavaan simstandard ggplot2 stringr
 #' @importFrom purrr map map_dfr map2
@@ -99,7 +100,12 @@ hier2 <- function(model,n=NULL,estimator="ML",plot=FALSE,manual=FALSE,reps=500){
   #Exclamation point is how we indicate if manual = T (because default is F)
   
   if(!manual){
-    fitted <- round(lavaan::fitmeasures(model,c("chisq","df","pvalue","srmr","rmsea","cfi")),3)
+    if (model@Options$test=="satorra.bentler" |model@Options$test=="yuan.bentler.mplus" | model@Options$test=="yuan.bentler.mplus"){
+      fitted <- round(lavaan::fitmeasures(model,c("chisq.scaled","df","pvalue.scaled","srmr","rmsea.robust","cfi.robust")),3)
+    } else if (model@Options$test=="scaled.shifted" | model@Options$test=="mean.var.adusted"){
+      fitted <- round(lavaan::fitmeasures(model,c("chisq","df","pvalue","srmr","rmsea.scaled","cfi.scaled")),3)
+    } else if(model@Options$test=="standard" ){
+      fitted <- round(lavaan::fitmeasures(model,c("chisq","df","pvalue","srmr","rmsea","cfi")),3)}
     fitted_m <- as.matrix(fitted)
     fitted_t <- t(fitted_m)
     fitted_t <- as.data.frame(fitted_t)

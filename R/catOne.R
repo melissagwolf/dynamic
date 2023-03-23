@@ -1,13 +1,13 @@
-#' @title Dynamic fit index (DFI) cutoffs adapted from Hu & Bentler (1999) for measurement misspecification in hierarchical factor models
+#' @title Dynamic fit index (DFI) cutoffs for categorical one-factor CFA models
 #'
-#' @description This function generates DFI cutoffs adapted from Hu & Bentler (1999) for measurement misspecification in hierarchical factor models using, by default, ML estimation.
+#' @description This function generates DFI cutoffs for one-factor CFA models that treat items as categorical. 
 #' The default argument is a singular argument: a \code{\link{lavaan}} object from the \code{\link{cfa}} function.
-#' The function can also accommodate manual entry of the model statement and sample size.
+#' The function can also accommodate manual entry of the model statement and sample size (including threshold estimates).
 #'
 #' The app-based version of this function can be found at \href{https://dynamicfit.app/}{dynamicfit.app}.
 #'
 #' @param model This can either be a \code{\link{lavaan}} object from the \code{\link{cfa}} function,
-#' OR a model statement written in \code{\link{lavaan}} \code{\link{model.syntax}} with standardized loadings.
+#' OR a model statement written in \code{\link{lavaan}} \code{\link{model.syntax}} with standardized loadings and thresholds.
 #' @param n If you entered a \code{\link{lavaan}} object for model, leave this blank.
 #' Otherwise, enter your sample size (numeric).
 #' @param plot Displays distributions of fit indices for each level of misspecification.
@@ -15,46 +15,95 @@
 #' If you manually entered standardized loadings and sample size, set this to TRUE.
 #' @param reps (**Do not modify this**): The number of replications used in your simulation. This is set to 500 by default in both the
 #' R package and the corresponding Shiny App.
-#' @param estimator Which estimator to use within the simulations (enter in quotes). The default is maximum likelihood. 
-
-#' @import dplyr lavaan simstandard ggplot2 stringr
+#' @param estimator Which estimator to use within the simulations (enter in quotes). The default is WLSMV. Only limited-information estimators that produce fit indices are permitted (i.e., maximum likelihood is not available) 
+#'
+#' @import dplyr lavaan simstandard ggplot2 stringr rlang
 #' @importFrom purrr map map_dfr map2
 #' @importFrom tidyr unite extract
 #' @importFrom patchwork plot_layout plot_annotation wrap_plots
 #'
-#' @author Patrick D Manapat, Melissa G Wolf, & Daniel McNeish
+#' @author Daniel McNeish & Melissa G Wolf 
 #'
-#' Maintainer: Patrick D Manapat <pmanapat@asu.edu>
+#' Maintainer: Daniel McNeish <dmcneish@asu.edu>
 #'
-#' @rdname hier1HB
+#' @rdname catOne
 #'
 #' @return Dynamic fit index (DFI) cutoffs for SRMR, RMSEA, and CFI.
 #' @export
 #'
 #' @examples
-#' #Manual entry example for a sample size of 2200 (manual=TRUE), from Reynolds & Keith (2017)
-#' 
-#' manmod <- "G =~ .51*F1 + .83*F2 + .97*F3 + .83*F4 + .87*F5 + .55*Y7
-#'            F1 =~ .41*Y1 + .81*Y2 + .71*Y3
-#'            F2 =~ .79*Y4 + .64*Y5 + .81*Y6 + .22*Y7
-#'            F3 =~ .53*Y8 + .68*Y9 + .66*Y10
-#'            F4 =~ .79*Y11 + .76*Y12
-#'            F5 =~ .82*Y13 + .71*Y14 + .85*Y15 + .81*Y16
-#'            F3 ~~ .77*F4"
-#' \donttest{hier2(model=manmod,n=2200,manual=TRUE)}
+#' #Lavaan object example (manual=FALSE)
+#' dat <- lavaan::HolzingerSwineford1939
+#' lavmod <- "F1 =~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9"
+#' fit <- lavaan::cfa(lavmod,dat)
+#' \donttest{cfaOne(fit)}
 #'
+#' #Manual entry example for a sample size of 6649 (manual=TRUE)
+#' #thresholds go in model statement as (a)categorical item name, (b) vertical pipe, (c) estimate, (d)times t+threshold number
+#' manmod <- "E =~ .76*bfi_e1 + .73*bfi_e2 + .59*bfi_e3 + .71*bfi_e4 + .84*bfi_e5 + .58*bfi_e6 + .71*bfi_e7 + .80*bfi_e8
 #'
-hier1HB <- function(model,n=NULL,estimator="ML",plot=FALSE,manual=FALSE,reps=500){
-  
+#'bfi_e1 |-1.69*t1
+#'bfi_e1 |-1.06*t2
+#'bfi_e1 |-0.53* t3
+#'bfi_e1 |0.06* t4
+#'bfi_e1 |0.75* t5
+#'
+#'bfi_e2 |-1.16*t1
+#'bfi_e2 |-0.42*t2
+#'bfi_e2 |0.28*t3
+#'bfi_e2 |0.71*t4
+#'bfi_e2 |1.34*t5
+#'
+#'bfi_e3 |-1.99* t1
+#'bfi_e3 |-1.27* t2
+#'bfi_e3 | 0.61*t3
+#'bfi_e3 | 0.09*t4
+#'bfi_e3 | 0.97*t5
+#'
+#'bfi_e4 |-2.05* t1
+#'bfi_e4 | -1.36*t2
+#'bfi_e4 | -0.74*t3
+#'bfi_e4 | -.004*t4
+#'bfi_e4 | 0.81*t5
+#'
+#'bfi_e5 | -1.12*t1
+#'bfi_e5 | -0.42*t2
+#'bfi_e5 | 0.16*t3
+#'bfi_e5 | 0.60*t4
+#'bfi_e5 | 1.21*t5
+#'
+#'bfi_e6 | -1.76*t1
+#'bfi_e6 | -1.18*t2
+#'bfi_e6 | -0.68*t3
+#'bfi_e6 | -0.03*t4
+#'bfi_e6 | 0.76*t5
+#'
+#'bfi_e7 | -1.04*t1
+#'bfi_e7 | -0.31*t2
+#'bfi_e7 | 0.46*t3
+#'bfi_e7 | 0.78*t4
+#'bfi_e7 | 1.38*t5
+#'
+#'bfi_e8 | -1.74*t1
+#'bfi_e8 | -1.12*t2
+#'bfi_e8 | -0.64*t3
+#'bfi_e8 | -.002*t4
+#'bfi_e8 | 0.77*t5"
+#' \donttest{catOne(model=manmod,n=6649,manual=TRUE)}
+#'
+
+
+catOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLSMV"){
   #If manual, expect manual (a la Shiny app)
   if(manual){
     n <- n
-    model9 <- model
+    model9 <- modelWithNum(model) #DELETE THRESHOLDS FROM MODEL STATEMENT
+    threshold<-cleanthreshold(model) #COLLECT THRESHOLDS IN SEPARATE OBJECT TO PASS TO LATER FUNCTIONS
   }else{
     #Use this to rewrite error message for when someone forgot to use manual=TRUE
     #But entered in model statement and sample size
-    #https://community.rstudio.com/t/create-custom-error-messages/39058/4
     #This is hacky but works, although traceback might confuse people
+    #https://community.rstudio.com/t/create-custom-error-messages/39058/4
     tryCatch(cfa_n(model),
              error=function(err){
                if (grepl("trying to get slot", err)) {
@@ -75,24 +124,29 @@ hier1HB <- function(model,n=NULL,estimator="ML",plot=FALSE,manual=FALSE,reps=500
     #need 'n' first because otherwise model will overwrite
     n <- cfa_n(model)
     model9 <- cfa_lavmod(model)
-    
+    threshold <-Thresh(model) # ISOLATE THRESHOLDS FROM LAVAAN OBJECT TO PASS THEM TO LATER FUNCTIONS
   }
   
   if (unstandardized(model9)>0){
-    stop("dynamic Error: One of your loadings or correlations has an absolute value of 1 or above (an impossible value). Please use standardized loadings. If all of your loadings are under 1, try looking for a missing decimal somewhere in your model statement.")
+    stop("dynamic Error: One of your loadings or correlations has an absolute value of 1 or above (an inadmissible value). Please use standardized loadings. If all of your loadings are under 1, try looking for a missing decimal somewhere in your model statement.")
   }
   
-  if (number_factor_first(model9)==0){
-    stop("dynamic Error: The model you entered is not hierarchical - please use a different function. For example, cfaOne for one-factor models or cfaHB for multi-factor models.")
+  if (number_factor(model9)>1){
+    stop("dynamic Error: You entered a multi-factor model.  Use cfaHB instead.")
   }
   
   if (defre(model9,n)==0){
-    stop("dynamic Error: It is impossible to add misspecifications to a just identified model.")
+    stop("dynamic Error: Misspecifications cannot be added to a just identified model.")
   }
   
-  if (nrow(multi_num_hier(model9))<(number_factor_first(model9)-1)){
+  if ( nrow(one_num(model9)) < (number_factor(model9)-1)){
     stop("dynamic Error: There are not enough free items to produce all misspecification levels.")
   }
+  
+  if (nrow(threshold) <1){
+    stop("dynamic Error: No thresholds were found. Make sure you treated data as categorical with an 'ordered=' option in lavaan or that you included threshold estimates in your model statement.")
+  }
+  
   
   #Create list to store outputs (table and plot)
   res <- list()
@@ -117,23 +171,23 @@ hier1HB <- function(model,n=NULL,estimator="ML",plot=FALSE,manual=FALSE,reps=500
   }
   
   #Run simulation
-  results <- multi_df_hier(model9,n,estimator,reps)
+  results <- one_df_cat(model9,n,reps, threshold,estimator) 
   
   #Save the data and make it exportable
   res$data <- fit_data(results)
   
   #For each list element (misspecification) compute the cutoffs
-  misspec_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_M=quantile(SRMR_M, c(.05,.1)),
-                                                      RMSEA_M=quantile(RMSEA_M, c(.05,.1)),
-                                                      CFI_M=quantile(CFI_M, c(.95,.9))))
+  misspec_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_M=stats::quantile(SRMR_M, c(.05,.1)),
+                                                      RMSEA_M=stats::quantile(RMSEA_M, c(.05,.1)),
+                                                      CFI_M=stats::quantile(CFI_M, c(.95,.9))))
   
   #For the true model, compute the cutoffs (these will all be the same - just need in list form)
-  true_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_T=quantile(SRMR_T, c(.95,.9)),
-                                                   RMSEA_T=quantile(RMSEA_T, c(.95,.9)),
-                                                   CFI_T=quantile(CFI_T, c(.05,.1))))
+  true_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_T=stats::quantile(SRMR_T, c(.95,.9)),
+                                                   RMSEA_T=stats::quantile(RMSEA_T, c(.95,.9)),
+                                                   CFI_T=stats::quantile(CFI_T, c(.05,.1))))
   
   #Bind each of the misspecified cutoffs to the true cutoffs, listwise
-  Table <- purrr::map(misspec_sum,~cbind(.,true_sum[[1]]) %>%
+  Table <- purrr::map(misspec_sum,~base::cbind(.,true_sum[[1]]) %>%
                         dplyr::mutate(SRMR_R=base::round(SRMR_M,3),
                                       RMSEA_R=base::round(RMSEA_M,3),
                                       CFI_R=base::round(CFI_M,3),
@@ -147,56 +201,30 @@ hier1HB <- function(model,n=NULL,estimator="ML",plot=FALSE,manual=FALSE,reps=500
   Row2 <- purrr::map_dfr(Table,~dplyr::mutate(.,SRMR_1=SRMR,
                                               RMSEA_1=RMSEA,
                                               CFI_1=CFI) %>%
-                           dplyr::mutate_at(c("SRMR_1","RMSEA_1","CFI_1"),list(dplyr::lead)) %>%
+                           dplyr::mutate_at(c("SRMR_1","RMSEA_1","CFI_1"),base::list(dplyr::lead)) %>%
                            dplyr::slice(1) %>%
-                           dplyr::mutate(SRMR=ifelse(is.character(SRMR),SRMR_1,"--"),
-                                         RMSEA=ifelse(is.character(RMSEA),RMSEA_1,"--"),
-                                         CFI=ifelse(is.character(CFI),CFI_1,"--"),
-                                         SRMR=stringr::str_replace_all(as.character(SRMR),"0\\.","."),
-                                         RMSEA=stringr::str_replace_all(as.character(RMSEA),"0\\.","."),
-                                         CFI=stringr::str_replace_all(as.character(CFI),"0\\.",".")) %>%
+                           dplyr::mutate(SRMR=base::ifelse(base::is.character(SRMR),SRMR_1,"--"),
+                                         RMSEA=base::ifelse(base::is.character(RMSEA),RMSEA_1,"--"),
+                                         CFI=base::ifelse(base::is.character(CFI),CFI_1,"--"),
+                                         SRMR=stringr::str_replace_all(base::as.character(SRMR),"0\\.","."),
+                                         RMSEA=stringr::str_replace_all(base::as.character(RMSEA),"0\\.","."),
+                                         CFI=stringr::str_replace_all(base::as.character(CFI),"0\\.",".")) %>%
                            dplyr::select(SRMR,RMSEA,CFI))
   
   #Still cleaning
   #Unlist Table
-  Table_C <- purrr::map_dfr(Table,~dplyr::mutate(.,SRMR=stringr::str_replace_all(as.character(SRMR),"0\\.","."),
-                                                 RMSEA=stringr::str_replace_all(as.character(RMSEA),"0\\.","."),
-                                                 CFI=stringr::str_replace_all(as.character(CFI),"0\\.",".")))
+  Table_C <- purrr::map_dfr(Table,~dplyr::mutate(.,SRMR=stringr::str_replace_all(base::as.character(SRMR),"0\\.","."),
+                                                 RMSEA=stringr::str_replace_all(base::as.character(RMSEA),"0\\.","."),
+                                                 CFI=stringr::str_replace_all(base::as.character(CFI),"0\\.",".")))
   
   #Cleaning
-  Table_C[seq(2,nrow(Table_C),by=2),] <- Row2
-  
-  #For row names
-  #Can't use number_factor because some factors may be ineligible for cross-loadings
-  #Instead, just grab the length of number of misspecifications we're adding
-  num_fact <- length(DGM_Multi_hier(model9))
+  Table_C[base::seq(2,nrow(Table_C),by=2),] <- Row2
   
   #Create row names for level
-  Table_C$levelnum <- paste("Level", rep(1:num_fact,each=2))
+  Table_C$levelnum <- base::paste("Level", base::rep(1:(base::nrow(Table_C)/2),each=2))
   
   #Create row names for proportions
-  Table_C$cut <- rep(c("95/5","90/10"))
-  
-  #Add cross-loading magnitude
-  suppressMessages(mag <- multi_add_hier(model9) %>%
-                     tidyr::separate(V1,into=c("a","b","Magnitude","d","e"),sep=" ") %>%
-                     select(Magnitude) %>%
-                     mutate(Magnitude=as.numeric(Magnitude),
-                            Magnitude=round(Magnitude,digits=3)) %>%
-                     slice(rep(1:n,each=2)))
-  
-  #Delete rownames (dplyr update?)
-  rownames(mag) <- NULL
-  
-  #Clean cross-loading magnitude
-  even <- seq_len(nrow(mag))%%2
-  mag2 <- cbind(mag,even) %>%
-    mutate(Magnitude=ifelse(even==0," ",Magnitude)) %>%
-    mutate(Magnitude=stringr::str_replace_all(as.character(Magnitude),"0\\.",".")) %>%
-    select(Magnitude)
-  
-  #Add to table
-  Table_C <- cbind(Table_C,mag2)
+  Table_C$cut <- base::rep(c("95/5","90/10"))
   
   #Add rownames to final table
   Final_Table <- Table_C %>%
@@ -208,15 +236,16 @@ hier1HB <- function(model,n=NULL,estimator="ML",plot=FALSE,manual=FALSE,reps=500
   
   #If user selects plot = T
   if(plot){
+    
     #For each list element (misspecification) compute the cutoffs
-    misspec_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_M=quantile(SRMR_M, c(.05,.1)),
-                                                        RMSEA_M=quantile(RMSEA_M, c(.05,.1)),
-                                                        CFI_M=quantile(CFI_M, c(.95,.9))))
+    misspec_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_M=stats::quantile(SRMR_M, c(.05,.1)),
+                                                        RMSEA_M=stats::quantile(RMSEA_M, c(.05,.1)),
+                                                        CFI_M=stats::quantile(CFI_M, c(.95,.9))))
     
     #For the true model, compute the cutoffs (these will all be the same - just need in list form)
-    true_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_T=quantile(SRMR_T, c(.95,.9)),
-                                                     RMSEA_T=quantile(RMSEA_T, c(.95,.9)),
-                                                     CFI_T=quantile(CFI_T, c(.05,.1))))
+    true_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_T=stats::quantile(SRMR_T, c(.95,.9)),
+                                                     RMSEA_T=stats::quantile(RMSEA_T, c(.95,.9)),
+                                                     CFI_T=stats::quantile(CFI_T, c(.05,.1))))
     
     #Select just those variables and rename columns to be the same
     Misspec_dat <- purrr::map(results,~dplyr::select(.,SRMR_M:Type_M) %>%
@@ -224,11 +253,11 @@ hier1HB <- function(model,n=NULL,estimator="ML",plot=FALSE,manual=FALSE,reps=500
     
     #Select just those variables and rename columns to be the same
     True_dat <- purrr::map(results,~dplyr::select(.,SRMR_T:Type_T) %>%
-                             `colnames<-`(c("SRMR","RMSEA","CFI","Model")))
+                             `colnames<-`(c("SRMR","RMSEA","CFI", "Model")))
     
     #For each element in the list, bind the misspecified cutoffs to the true cutoffs
     #rbind doesn't work well with lists (needs do.call statement)
-    plot <- lapply(seq(length(Misspec_dat)),function(x) dplyr::bind_rows(Misspec_dat[x],True_dat[x]))
+    plot <- base::lapply(base::seq(base::length(Misspec_dat)),function(x) dplyr::bind_rows(Misspec_dat[x],True_dat[x]))
     
     #Plot SRMR. Need map2 and data=.x (can't remember why).
     SRMR_plot <- purrr::map2(plot,misspec_sum,~ggplot(data=.x,aes(x=SRMR,fill=Model))+
@@ -237,16 +266,16 @@ hier1HB <- function(model,n=NULL,estimator="ML",plot=FALSE,manual=FALSE,reps=500
                                scale_fill_manual(values=c("#E9798C","#66C2F5"))+
                                geom_vline(aes(xintercept=.y$SRMR_M[1],
                                               linetype="misspec_sum$SRMR_M[1]",color="misspec_sum$SRMR_M[1]"),
-                                          linewidth=.6)+
+                                          size=.6)+
                                geom_vline(aes(xintercept=.08,
                                               linetype=".08",color=".08"),
-                                          linewidth=.75)+
+                                          size=.75)+
                                scale_color_manual(name="Cutoff Values",
-                                                  labels=c("Dynamic Cutoff","Hu & Bentler Cutoff"),
+                                                  labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
                                                   values=c("misspec_sum$SRMR_M[1]"="black",
                                                            ".08"="black"))+
                                scale_linetype_manual(name="Cutoff Values",
-                                                     labels=c("Dynamic Cutoff","Hu & Bentler Cutoff"),
+                                                     labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
                                                      values=c("misspec_sum$SRMR_M[1]"="longdash",
                                                               ".08"="dotted"))+
                                theme(axis.title.y = element_blank(),
@@ -265,16 +294,16 @@ hier1HB <- function(model,n=NULL,estimator="ML",plot=FALSE,manual=FALSE,reps=500
                                 scale_fill_manual(values=c("#E9798C","#66C2F5"))+
                                 geom_vline(aes(xintercept=.y$RMSEA_M[1],
                                                linetype="misspec_sum$RMSEA_M[1]",color="misspec_sum$RMSEA_M[1]"),
-                                           linewidth=.6)+
+                                           size=.6)+
                                 geom_vline(aes(xintercept=.06,
                                                linetype=".06",color=".06"),
-                                           linewidth=.75)+
+                                           size=.75)+
                                 scale_color_manual(name="Cutoff Values",
-                                                   labels=c("Dynamic Cutoff","Hu & Bentler Cutoff"),
+                                                   labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
                                                    values=c("misspec_sum$RMSEA_M[1]"="black",
                                                             ".06"="black"))+
                                 scale_linetype_manual(name="Cutoff Values",
-                                                      labels=c("Dynamic Cutoff","Hu & Bentler Cutoff"),
+                                                      labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
                                                       values=c("misspec_sum$RMSEA_M[1]"="longdash",
                                                                ".06"="dotted"))+
                                 theme(axis.title.y = element_blank(),
@@ -293,16 +322,16 @@ hier1HB <- function(model,n=NULL,estimator="ML",plot=FALSE,manual=FALSE,reps=500
                               scale_fill_manual(values=c("#E9798C","#66C2F5"))+
                               geom_vline(aes(xintercept=.y$CFI_M[1],
                                              linetype="misspec_sum$CFI_M[1]",color="misspec_sum$CFI_M[1]"),
-                                         linewidth=.6)+
+                                         size=.6)+
                               geom_vline(aes(xintercept=.95,
                                              linetype=".95",color=".95"),
-                                         linewidth=.75)+
+                                         size=.75)+
                               scale_color_manual(name="Cutoff Values",
-                                                 labels=c("Dynamic Cutoff","Hu & Bentler Cutoff"),
+                                                 labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
                                                  values=c("misspec_sum$CFI_M[1]"="black",
                                                           ".95"="black"))+
                               scale_linetype_manual(name="Cutoff Values",
-                                                    labels=c("Dynamic Cutoff","Hu & Bentler Cutoff"),
+                                                    labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
                                                     values=c("misspec_sum$CFI_M[1]"="longdash",
                                                              ".95"="dotted"))+
                               theme(axis.title.y = element_blank(),
@@ -314,15 +343,14 @@ hier1HB <- function(model,n=NULL,estimator="ML",plot=FALSE,manual=FALSE,reps=500
                                     legend.title = element_blank(),
                                     legend.box = "vertical"))
     
-    
     #Create a list with the plots combined for each severity level
-    plots_combo <- lapply(seq(length(plot)),function(x) c(SRMR_plot[x],RMSEA_plot[x],CFI_plot[x]))
+    plots_combo <- base::lapply(base::seq(base::length(plot)),function(x) c(SRMR_plot[x],RMSEA_plot[x],CFI_plot[x]))
     
     #Add a collective legend and title with the level indicator
-    plots <- lapply(seq(length(plots_combo)), function(x) patchwork::wrap_plots(plots_combo[[x]])+
-                      plot_layout(guides = "collect")+
-                      plot_annotation(title=paste("Level", x))
-                    & theme(legend.position = 'bottom'))
+    plots <- base::lapply(base::seq(base::length(plots_combo)), function(x) patchwork::wrap_plots(plots_combo[[x]])+
+                            plot_layout(guides = "collect")+
+                            plot_annotation(title=paste("Level", x))
+                          & theme(legend.position = 'bottom'))
     
     #Put into list
     res$plots <- plots
@@ -330,22 +358,22 @@ hier1HB <- function(model,n=NULL,estimator="ML",plot=FALSE,manual=FALSE,reps=500
   }
   
   #Create object (necessary for subsequent print statement)
-  class(res) <- 'hier1HB'
+  class(res) <- 'cfaOne'
   
   return(res)
   
 }
 
-#' @method print hier1HB
-#' @param x hier1HB object
+#' @method print cfaOne
+#' @param x cfaOne object
 #' @param ... other print parameters
-#' @rdname hier1HB
+#' @rdname catOne
 #' @export
 
 #Print suppression/organization statement for list
 #Needs same name as class, not function name
 #Need to add ... param or will get error message in CMD check
-print.hier1HB <- function(x,...){
+print.catOne <- function(x,...){
   
   #Automatically return fit cutoffs
   base::cat("Your DFI cutoffs: \n")

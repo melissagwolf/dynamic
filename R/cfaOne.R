@@ -41,6 +41,7 @@
 #' manmod <- "F1 =~ .602*Y1 + .805*Y2 + .857*Y3 + .631*Y4 + .345*Y5 + .646*Y6"
 #' \donttest{cfaOne(model=manmod,n=300,manual=TRUE)}
 #'
+
 cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=500){
 
   #If manual, expect manual (a la Shiny app)
