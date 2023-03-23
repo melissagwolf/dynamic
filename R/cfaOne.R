@@ -110,7 +110,7 @@ cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500)
   }
 
   #Run simulation
-  results <- one_df(model9,n,reps)
+  results <- one_df(model9,n,estimator, reps)
 
   #Save the data and make it exportable
   res$data <- fit_data(results)
