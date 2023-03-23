@@ -5,7 +5,14 @@
 \alias{print.cfaOne}
 \title{Dynamic fit index (DFI) cutoffs for one-factor CFA models}
 \usage{
-cfaOne(model, n = NULL, plot = FALSE, manual = FALSE, reps = 500)
+cfaOne(
+  model,
+  n = NULL,
+  plot = FALSE,
+  manual = FALSE,
+  estimator = "ML",
+  reps = 500
+)
 
 \method{print}{cfaOne}(x, ...)
 }
@@ -20,6 +27,8 @@ Otherwise, enter your sample size (numeric).}
 
 \item{manual}{If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
 If you manually entered standardized loadings and sample size, set this to TRUE.}
+
+\item{estimator}{Which estimator to use within the simulations (enter in quotes). The default is ML.}
 
 \item{reps}{(**Do not modify this**): The number of replications used in your simulation. This is set to 500 by default in both the
 R package and the corresponding Shiny App.}
