@@ -15,6 +15,7 @@
 #' If you manually entered standardized loadings and sample size, set this to TRUE.
 #' @param reps (**Do not modify this**): The number of replications used in your simulation. This is set to 500 by default in both the
 #' R package and the corresponding Shiny App.
+#' @param estimator Which estimator to use within the simulations (enter in quotes). The default is ML.
 #'
 #' @import dplyr lavaan simstandard ggplot2 stringr
 #' @importFrom purrr map map_dfr map2
@@ -42,7 +43,7 @@
 #' \donttest{cfaOne(model=manmod,n=300,manual=TRUE)}
 #'
 
-cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=500){
+cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500){
 
   #If manual, expect manual (a la Shiny app)
   if(manual){
