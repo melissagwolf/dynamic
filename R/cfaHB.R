@@ -116,7 +116,7 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500){
   }
 
   #Run simulation
-  results <- multi_df_HB(model9,n,reps, estimator)
+  results <- multi_df_HB(model9,n,estimator,reps)
 
   #Save the data and make it exportable
   res$data <- fit_data(results)
