@@ -387,7 +387,7 @@ catOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLS
 #Print suppression/organization statement for list
 #Needs same name as class, not function name
 #Need to add ... param or will get error message in CMD check
-print.cfaOne <- function(x,...){
+print.catOne <- function(x,...){
 
   #Automatically return fit cutoffs
   base::cat("Your DFI cutoffs: \n")
