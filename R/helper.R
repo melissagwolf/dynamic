@@ -16,19 +16,19 @@
 #### Function to create model statement without numbers from user model (for input) ####
 #Copy from OG
   cleanmodel <- function(model){
-    
+
     suppressMessages(model %>%
                        lavaan::lavaanify(fixed.x = FALSE) %>%
                        dplyr::filter(lhs != rhs) %>%
                        dplyr::filter(op != "~1") %>%
-                       dplyr::filter(op != "|") %>% 
+                       dplyr::filter(op != "|") %>%
                        dplyr::group_by(lhs,op) %>%
                        dplyr::summarise(rhs = paste(rhs, collapse = " + ")) %>%
                        dplyr::arrange(dplyr::desc(op)) %>%
                        tidyr::unite("l", lhs, op, rhs, sep = " ") %>%
                        dplyr::pull(l))
   }
-  
+
 #### Function for Number of Factors ####
 #Copy from OG
 
@@ -402,25 +402,25 @@ one_fit <- function(model,n,estimator,reps){
   }  else {
     ind<-c("srmr","rmsea","cfi")
   }
-  
+
   #Run 500 cfa for each element in the list
   misspec_cfa <- purrr::map(data, function(x) purrr::map(x, function(y) lavaan::cfa(model=mod,
                                                                                     estimator=estimator,
-                                                                                    data=y, 
+                                                                                    data=y,
                                                                                     std.lv=TRUE,
                                                                                     se=se,
                                                                                     check.gradient=FALSE,
-                                                                                    check.post=FALSE, 
-                                                                                    check.vcov=FALSE, 
+                                                                                    check.post=FALSE,
+                                                                                    check.vcov=FALSE,
                                                                                     control=list(rel.tol=.001))))
-  
+
   #Extract fit stats from each rep (list) into a data frame and clean using nested lapply
   #map_dfr returns data frame instead of list
   #for each misspecification level (in the list), access the lavaan objects (x)
   #and extract the fit stats (y) - and return as a df
   misspec_fit_sum <- purrr::map(misspec_cfa, function(x) purrr::map_dfr(x, function(y) lavaan::fitMeasures(y, ind)) %>%
                                   `colnames<-`(c("SRMR_M","RMSEA_M","CFI_M")) %>%
-                                  dplyr::mutate(Type_M="Misspecified"))  
+                                  dplyr::mutate(Type_M="Misspecified"))
 
   set.seed(NULL)
 
@@ -472,18 +472,18 @@ true_fit_one <- function(model,n,estimator,reps){
   }  else {
     ind<-c("srmr","rmsea","cfi")
   }
-  
+
   #Run 500 cfa
   true_cfa <- purrr::map(true_data$data,function(x) lavaan::cfa(model=mod,
                                                                 estimator=estimator,
-                                                                data=x, 
+                                                                data=x,
                                                                 std.lv=TRUE,
                                                                 se=se,
                                                                 check.gradient=FALSE,
-                                                                check.post=FALSE, 
-                                                                check.vcov=FALSE, 
+                                                                check.post=FALSE,
+                                                                check.vcov=FALSE,
                                                                 control=list(rel.tol=.001)))
-  
+
   true_fit_sum <- purrr::map_dfr(true_cfa,~lavaan::fitMeasures(., ind)) %>%
     `colnames<-`(c("SRMR_T","RMSEA_T","CFI_T")) %>%
     dplyr::mutate(Type_T="True")
@@ -799,25 +799,25 @@ multi_fit_HB <- function(model,n,estimator,reps){
   }  else {
     ind<-c("srmr","rmsea","cfi")
   }
-  
+
   #Run 500 cfa for each element in the list
   misspec_cfa <- purrr::map(data, function(x) purrr::map(x, function(y) lavaan::cfa(model=mod,
                                                                                     estimator=estimator,
-                                                                                    data=y, 
+                                                                                    data=y,
                                                                                     std.lv=TRUE,
                                                                                     se=se,
                                                                                     check.gradient=FALSE,
-                                                                                    check.post=FALSE, 
-                                                                                    check.vcov=FALSE, 
+                                                                                    check.post=FALSE,
+                                                                                    check.vcov=FALSE,
                                                                                     control=list(rel.tol=.001))))
-  
+
   #Extract fit stats from each rep (list) into a data frame and clean using nested lapply
   #map_dfr returns data frame instead of list
   #for each misspecification level (in the list), access the lavaan objects (x)
   #and extract the fit stats (y) - and return as a df
   misspec_fit_sum <- purrr::map(misspec_cfa, function(x) purrr::map_dfr(x, function(y) lavaan::fitMeasures(y, ind)) %>%
                                   `colnames<-`(c("SRMR_M","RMSEA_M","CFI_M")) %>%
-                                  dplyr::mutate(Type_M="Misspecified"))  
+                                  dplyr::mutate(Type_M="Misspecified"))
   set.seed(NULL)
 
   return(misspec_fit_sum)
@@ -873,18 +873,18 @@ true_fit_HB <- function(model,n,estimator,reps){
   }  else {
     ind<-c("srmr","rmsea","cfi")
   }
-  
+
   #Run 500 cfa
   true_cfa <- purrr::map(true_data$data,function(x) lavaan::cfa(model=mod,
                                                                 estimator=estimator,
-                                                                data=x, 
+                                                                data=x,
                                                                 std.lv=TRUE,
                                                                 se=se,
                                                                 check.gradient=FALSE,
-                                                                check.post=FALSE, 
-                                                                check.vcov=FALSE, 
+                                                                check.post=FALSE,
+                                                                check.vcov=FALSE,
                                                                 control=list(rel.tol=.001)))
-  
+
   true_fit_sum <- purrr::map_dfr(true_cfa,~lavaan::fitMeasures(., ind)) %>%
     `colnames<-`(c("SRMR_T","RMSEA_T","CFI_T")) %>%
     dplyr::mutate(Type_T="True")
@@ -1443,26 +1443,26 @@ multi_fit_hier <- function(model,n,estimator,reps){
   }  else {
     ind<-c("srmr","rmsea","cfi")
   }
-  
+
   #Run 500 cfa for each element in the list
   misspec_cfa <- purrr::map(data, function(x) purrr::map(x, function(y) lavaan::cfa(model=mod,
                                                                                     estimator=estimator,
-                                                                                    data=y, 
+                                                                                    data=y,
                                                                                     std.lv=TRUE,
                                                                                     se=se,
                                                                                     check.gradient=FALSE,
-                                                                                    check.post=FALSE, 
-                                                                                    check.vcov=FALSE, 
+                                                                                    check.post=FALSE,
+                                                                                    check.vcov=FALSE,
                                                                                     control=list(rel.tol=.001))))
-  
+
   #Extract fit stats from each rep (list) into a data frame and clean using nested lapply
   #map_dfr returns data frame instead of list
   #for each misspecification level (in the list), access the lavaan objects (x)
   #and extract the fit stats (y) - and return as a df
   misspec_fit_sum <- purrr::map(misspec_cfa, function(x) purrr::map_dfr(x, function(y) lavaan::fitMeasures(y, ind)) %>%
                                   `colnames<-`(c("SRMR_M","RMSEA_M","CFI_M")) %>%
-                                  dplyr::mutate(Type_M="Misspecified"))  
-  
+                                  dplyr::mutate(Type_M="Misspecified"))
+
 
   set.seed(NULL)
 
@@ -1510,7 +1510,7 @@ true_fit_hier <- function(model,n,estimator,reps){
     tidyr::nest() %>%
     base::as.list()
 
-  
+
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
   if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
     ind<-c("srmr","rmsea.scaled","cfi.scaled")
@@ -1519,18 +1519,18 @@ true_fit_hier <- function(model,n,estimator,reps){
   }  else {
     ind<-c("srmr","rmsea","cfi")
   }
-  
+
   #Run 500 cfa
   true_cfa <- purrr::map(true_data$data,function(x) lavaan::cfa(model=mod,
                                                                 estimator=estimator,
-                                                                data=x, 
+                                                                data=x,
                                                                 std.lv=TRUE,
                                                                 se=se,
                                                                 check.gradient=FALSE,
-                                                                check.post=FALSE, 
-                                                                check.vcov=FALSE, 
+                                                                check.post=FALSE,
+                                                                check.vcov=FALSE,
                                                                 control=list(rel.tol=.001)))
-  
+
   true_fit_sum <- purrr::map_dfr(true_cfa,~lavaan::fitMeasures(., ind)) %>%
     `colnames<-`(c("SRMR_T","RMSEA_T","CFI_T")) %>%
     dplyr::mutate(Type_T="True")
@@ -1790,25 +1790,25 @@ one_fit_hier2 <- function(model,n,estimator,reps){
   }  else {
     ind<-c("srmr","rmsea","cfi")
   }
-  
+
   #Run 500 cfa for each element in the list
   misspec_cfa <- purrr::map(data, function(x) purrr::map(x, function(y) lavaan::cfa(model=mod,
                                                                                     estimator=estimator,
-                                                                                    data=y, 
+                                                                                    data=y,
                                                                                     std.lv=TRUE,
                                                                                     se=se,
                                                                                     check.gradient=FALSE,
-                                                                                    check.post=FALSE, 
-                                                                                    check.vcov=FALSE, 
+                                                                                    check.post=FALSE,
+                                                                                    check.vcov=FALSE,
                                                                                     control=list(rel.tol=.001))))
-  
+
   #Extract fit stats from each rep (list) into a data frame and clean using nested lapply
   #map_dfr returns data frame instead of list
   #for each misspecification level (in the list), access the lavaan objects (x)
   #and extract the fit stats (y) - and return as a df
   misspec_fit_sum <- purrr::map(misspec_cfa, function(x) purrr::map_dfr(x, function(y) lavaan::fitMeasures(y, ind)) %>%
                                   `colnames<-`(c("SRMR_M","RMSEA_M","CFI_M")) %>%
-                                  dplyr::mutate(Type_M="Misspecified"))  
+                                  dplyr::mutate(Type_M="Misspecified"))
 
   set.seed(NULL)
 
@@ -1860,18 +1860,18 @@ true_fit_one_hier2 <- function(model,n,estimator,reps){
   }  else {
     ind<-c("srmr","rmsea","cfi")
   }
-  
+
   #Run 500 cfa
   true_cfa <- purrr::map(true_data$data,function(x) lavaan::cfa(model=mod,
                                                                 estimator=estimator,
-                                                                data=x, 
+                                                                data=x,
                                                                 std.lv=TRUE,
                                                                 se=se,
                                                                 check.gradient=FALSE,
-                                                                check.post=FALSE, 
-                                                                check.vcov=FALSE, 
+                                                                check.post=FALSE,
+                                                                check.vcov=FALSE,
                                                                 control=list(rel.tol=.001)))
-  
+
   true_fit_sum <- purrr::map_dfr(true_cfa,~lavaan::fitMeasures(., ind)) %>%
     `colnames<-`(c("SRMR_T","RMSEA_T","CFI_T")) %>%
     dplyr::mutate(Type_T="True")
@@ -1909,49 +1909,49 @@ one_df_hier2 <- function(model,n,estimator,reps){
 ###### Separate out thresholds from manual=TRUE#
 ##### this is used to to create threshold list for simulation discretized #
 cleanthreshold <- function(model){
-  
+
   suppressMessages(model %>%
                      lavaan::lavaanify(fixed.x = FALSE) %>%
                      dplyr::filter(grepl("^t",rhs)) %>%
                      dplyr::select(lhs,op,rhs,ustart) %>%
                      dplyr::rename(est.std = ustart))
-}  
+}
 
 ### discard thresholds if Manual = TRUE but keep the estimates#
 ### Basiclly a long way to get equivalent of model statement with manual=TRUE for continuous case#
 modelWithNum <- function(model){
-  
+
   suppressMessages(model %>%
                      lavaan::lavaanify(fixed.x=FALSE) %>%
                      dplyr::filter(lhs != rhs) %>%
                      dplyr::filter(op != "~1") %>%
                      dplyr::filter(op != "|") %>%
                      dplyr::group_by(lhs,op) %>%
-                     tidyr::unite("xx",ustart,rhs, sep="*")  %>% 
+                     tidyr::unite("xx",ustart,rhs, sep="*")  %>%
                      dplyr::summarise(rhs = paste(xx, collapse = " + "))%>%
-                     dplyr::arrange(dplyr::desc(op))%>% 
-                     tidyr::unite("l", lhs, op, rhs, sep = " ") %>% 
+                     dplyr::arrange(dplyr::desc(op))%>%
+                     tidyr::unite("l", lhs, op, rhs, sep = " ") %>%
                      summarise(l=paste(l, collapse="\n")) %>%
-                     dplyr::pull(l) 
+                     dplyr::pull(l)
   )
 }
 
 ### function to grab the thresholds if input is a lavaan file
 Thresh <- function(model){
-  
+
   #Extract standardized solution from lavaan object
   lav <- lavaan::standardizedSolution(model)
-  
+
   #Create model statement
   t <- suppressMessages(as.data.frame(lav %>%
                                         dplyr::filter(lhs != rhs) %>%
                                         dplyr::group_by(lhs,op) %>%
-                                        dplyr::filter(op == "|") %>% 
+                                        dplyr::filter(op == "|") %>%
                                         dplyr::select(lhs,op,rhs,est.std)))
-  
+
   return(t)
-  
-} 
+
+}
 
 
 ##function to identify items with thresholds
@@ -1963,7 +1963,7 @@ cat_items <- function(threshold){
     dplyr::filter(op=="|") %>%
     dplyr::select(lhs) %>%
     base::unique()
-  
+
   return(items)
 }
 
@@ -1990,22 +1990,22 @@ th2<-function(threshold){
 }
 
 one_fit_cat <- function(model,n,reps,threshold, estimator){
-  
+
   #Get clean model equation
   mod <- cleanmodel(model)
-  
+
   #Get parameters for misspecified dgm
   misspec_dgm <- DGM_one(model)
-  
+
   #Use max sample size of 10000
   n <- base::min(n,2000)
-  
+
   #Set seed
   set.seed(649364)
-  
+
   #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
   r <- reps
-  
+
   #Simulate one large dataset for each misspecification (use map to apply across each
   #element (set of misspecifications) in the list)
   all_data_misspec <- purrr::map(misspec_dgm,~simstandard::sim_standardized(m=.,n=n*r,
@@ -2017,12 +2017,12 @@ one_fit_cat <- function(model,n,reps,threshold, estimator){
   ### "x" loop not present in true data generation function
   a1<-th(threshold)
   a2<-th2(threshold)
-  for (x in 1:3) 
+  for (x in 1:3)
   {
     for (i in 1:ncol(a1))
     {
       u<- as.numeric(sum(!is.na(a1[,i])))
-      all_data_misspec[[x]]<-all_data_misspec[[x]] %>% 
+      all_data_misspec[[x]]<-all_data_misspec[[x]] %>%
         dplyr::mutate(!!a2[,i] := case_when(
           !!rlang::sym(a2[,i])  <= a1[1,i] ~100,
           !!rlang::sym(a2[,i]) >   a1[u,i] ~100*(u+1),
@@ -2030,33 +2030,33 @@ one_fit_cat <- function(model,n,reps,threshold, estimator){
         )
       if(sum(!is.na(a1[,i])) > 2){
         for (j in 1:sum(!is.na(a1[,i]))) {
-          all_data_misspec[[x]]<-all_data_misspec[[x]] %>% 
+          all_data_misspec[[x]]<-all_data_misspec[[x]] %>%
             dplyr::mutate(!!a2[,i] := case_when(
               between( !!rlang::sym(a2[,i]) , a1[j,i], a1[j+1,i]) ~ as.numeric(100*(j+1)),
               TRUE~ !!rlang::sym(a2[,i]))
             )
-        } 
+        }
       }
     }
   }
-  
+
   #Create indicator to split into 500 datasets for 500 reps
   rep_id_misspec <- base::rep(1:r,n)
-  
+
   #Combine indicator with dataset
   dat_rep_misspec <- purrr::map(all_data_misspec,~base::cbind(.,rep_id_misspec))
-  
+
   #Group and list
   misspec_data <- purrr::map(dat_rep_misspec,~dplyr::group_by(.,rep_id_misspec) %>%
                                tidyr::nest())
-  
+
   #Grab data level of the list
   data <- purrr::map(misspec_data,2)
-  
+
   #categorical vector of categorical items
   clist<-cat_items(threshold)[,1]
-  
-  se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
+
+  se<-ifelse(startsWith(estimator,"ULS"),"robust.sem","none")
   if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
     ind<-c("srmr","rmsea.scaled","cfi.scaled")
   } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
@@ -2064,17 +2064,17 @@ one_fit_cat <- function(model,n,reps,threshold, estimator){
   }  else {
     ind<-c("srmr","rmsea","cfi")
   }
-  
+
   #Run 500 cfa
   #changed lavaan code to treat items in clist as categorical
   #also added some options to suppress common warnings
   misspec_cfa <- purrr::map(data, function(x) purrr::map(x, function(y) lavaan::cfa(model = mod, data=y, estimator=estimator, ordered=clist, std.lv=TRUE, se=se,
                                                                                     check.gradient=FALSE,
-                                                                                    check.post=FALSE, 
+                                                                                    check.post=FALSE,
                                                                                     check.vcov=FALSE,
                                                                                     control=list(rel.tol=.001))))
-  
-  
+
+
   #Extract fit stats from each rep (list) into a data frame and clean using nested lapply
   #map_dfr returns data frame instead of list
   #for each misspecification level (in the list), access the lavaan objects (x)
@@ -2082,29 +2082,29 @@ one_fit_cat <- function(model,n,reps,threshold, estimator){
   misspec_fit_sum <- purrr::map(misspec_cfa, function(x) purrr::map_dfr(x, function(y) lavaan::fitMeasures(y,ind)) %>%
                                   `colnames<-`(c("SRMR_M","RMSEA_M","CFI_M")) %>%
                                   dplyr::mutate(Type_M="Misspecified"))
-  
+
   set.seed(NULL)
-  
+
   return(misspec_fit_sum)
   }
 
 #simulates MVN data, but then bins it based on thresholds
 true_fit_one_cat <- function(model,n,reps, threshold, estimator){
-  
+
   #Get clean model equation
   mod <- cleanmodel(model)
-  
+
   true_dgm <- model
-  
+
   #Use max sample size of 10000
   n <- base::min(n,2000)
-  
+
   #Set Seed
   set.seed(326267)
-  
+
   #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
   r <- reps
-  
+
   #Simulate one large dataset
   all_data_true <- simstandard::sim_standardized(m=true_dgm,n = n*r,
                                                  latent = FALSE,
@@ -2112,11 +2112,11 @@ true_fit_one_cat <- function(model,n,reps, threshold, estimator){
   #similar to above, loops through categorical items to discretize data based on thresholds
   a1<-th(threshold)
   a2<-th2(threshold)
-  
+
   for (i in 1:ncol(a1))
   {
     u<- as.numeric(sum(!is.na(a1[,i])))
-    all_data_true<-all_data_true%>% 
+    all_data_true<-all_data_true%>%
       dplyr::mutate(!!a2[,i] := case_when(
         !!rlang::sym(a2[,i])  <= a1[1,i] ~100,
         !!rlang::sym(a2[,i]) >   a1[u,i] ~100*(u+1),
@@ -2124,32 +2124,32 @@ true_fit_one_cat <- function(model,n,reps, threshold, estimator){
       )
     if(sum(!is.na(a1[,i])) > 2){
       for (j in 1:sum(!is.na(a1[,i]))) {
-        all_data_true<-all_data_true%>% 
+        all_data_true<-all_data_true%>%
           dplyr::mutate(!!a2[,i] := case_when(
             between( !!rlang::sym(a2[,i]) , a1[j,i], a1[j+1,i]) ~ as.numeric(100*(j+1)),
             TRUE~ !!rlang::sym(a2[,i]))
           )
-      } 
+      }
     }
   }
-  
-  
+
+
   #Create indicator to split into 500 datasets for 500 reps
   rep_id_true <- base::rep(1:r,n)
-  
+
   #Combine indicator with dataset
   dat_rep_true <- base::cbind(all_data_true,rep_id_true)
-  
+
   #Group and list
   true_data <- dat_rep_true %>%
     dplyr::group_by(rep_id_true) %>%
     tidyr::nest() %>%
     base::as.list()
-  
+
    #create character vector listing categorical items
   clist<-cat_items(threshold)[,1]
-  
-  se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
+
+  se<-ifelse(startsWith(estimator,"ULS"),"robust.sem","none")
   if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
     ind<-c("srmr","rmsea.scaled","cfi.scaled")
   } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
@@ -2157,39 +2157,39 @@ true_fit_one_cat <- function(model,n,reps, threshold, estimator){
   }  else {
     ind<-c("srmr","rmsea","cfi")
   }
-  
+
   #Run 500 cfa
   #added ORDERED = to treat items as categorical
   #also added options to suppress common warnings
   true_cfa <- purrr::map(true_data$data,function(x) lavaan::cfa(model = mod, data=x, std.lv=TRUE, ordered=clist, estimator=estimator, std.lv=TRUE, se=se,
                                                                 check.gradient=FALSE,
-                                                                check.post=FALSE, 
+                                                                check.post=FALSE,
                                                                 check.vcov=FALSE,control=list(rel.tol=.001)))
-  
+
   #Extract fit stats from each rep (list) into a data frame and clean
   true_fit_sum <- purrr::map_dfr(true_cfa,~lavaan::fitMeasures(., ind)) %>%
     `colnames<-`(c("SRMR_T","RMSEA_T","CFI_T")) %>%
     dplyr::mutate(Type_T="True")
-  
+
   set.seed(NULL)
-  
+
   return(true_fit_sum)
   }
 
 one_df_cat <- function(model,n,reps,threshold, estimator){
-  
+
   #Use max sample size of 2000
   n <- min(n,2000)
-  
+
   #Get fit stats for misspecified model
   misspec_fit <- one_fit_cat(model,n,reps, threshold,estimator)
-  
+
   #Get fit stats for correctly specified model
   true_fit <- true_fit_one_cat(model,n,reps, threshold,estimator)
-  
+
   #Produce final table by level
   Table <- purrr::map(misspec_fit,~cbind(.,true_fit))
-  
+
   #Final table
   return(Table)
 }
