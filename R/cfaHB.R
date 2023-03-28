@@ -13,7 +13,7 @@
 #' @param plot Displays distributions of fit indices for each level of misspecification.
 #' @param manual If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
 #' If you manually entered standardized loadings and sample size, set this to TRUE.
-#' @param reps (**Do not modify this**): The number of replications used in your simulation. This is set to 500 by default in both the
+#' @param reps The number of replications used in your simulation. This is set to 500 by default in both the
 #' R package and the corresponding Shiny App.
 #'
 #' @import dplyr lavaan simstandard ggplot2 stringr
