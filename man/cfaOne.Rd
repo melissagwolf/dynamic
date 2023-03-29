@@ -30,7 +30,7 @@ If you manually entered standardized loadings and sample size, set this to TRUE.
 
 \item{estimator}{Which estimator to use within the simulations (enter in quotes). The default is ML.}
 
-\item{reps}{(**Do not modify this**): The number of replications used in your simulation. This is set to 500 by default in both the
+\item{reps}{The number of replications used in your simulation. This is set to 500 by default in both the
 R package and the corresponding Shiny App.}
 
 \item{x}{cfaOne object}

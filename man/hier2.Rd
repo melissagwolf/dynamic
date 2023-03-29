@@ -30,7 +30,7 @@ Otherwise, enter your sample size (numeric).}
 \item{manual}{If you entered a \code{\link{lavaan}} object, keep this set to FALSE.
 If you manually entered standardized loadings and sample size, set this to TRUE.}
 
-\item{reps}{(**Do not modify this**): The number of replications used in your simulation. This is set to 500 by default in both the
+\item{reps}{The number of replications used in your simulation. This is set to 500 by default in both the
 R package and the corresponding Shiny App.}
 
 \item{x}{hier2 object}
