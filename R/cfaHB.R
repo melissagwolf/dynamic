@@ -15,6 +15,7 @@
 #' If you manually entered standardized loadings and sample size, set this to TRUE.
 #' @param reps The number of replications used in your simulation. This is set to 500 by default in both the
 #' R package and the corresponding Shiny App.
+#' @param estimator Which estimator to use within the simulations (enter in quotes). The default is ML.
 #'
 #' @import dplyr lavaan simstandard ggplot2 stringr
 #' @importFrom purrr map map_dfr map2
@@ -47,7 +48,7 @@
 #'            Y4 ~~ .301*Y5"
 #' \donttest{exactFit(model=manmod,n=400,manual=TRUE)}
 #'
-cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=500){
+cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500){
 #test
   #If manual, expect manual (a la Shiny app)
   if(manual){
@@ -115,7 +116,7 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=500){
   }
 
   #Run simulation
-  results <- multi_df_HB(model9,n,reps)
+  results <- multi_df_HB(model9,n,estimator,reps)
 
   #Save the data and make it exportable
   res$data <- fit_data(results)
