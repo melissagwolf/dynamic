@@ -159,7 +159,7 @@ catOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLS
     if (model@Options$test=="satorra.bentler" |model@Options$test=="yuan.bentler.mplus" | model@Options$test=="yuan.bentler.mplus"){
       fitted <- round(lavaan::fitmeasures(model,c("chisq.scaled","df","pvalue.scaled","srmr","rmsea.robust","cfi.robust")),3)
     } else if (model@Options$test=="scaled.shifted" | model@Options$test=="mean.var.adusted"){
-      fitted <- round(lavaan::fitmeasures(model,c("chisq","df","pvalue","srmr","rmsea.scaled","cfi.scaled")),3)
+      fitted <- round(lavaan::fitmeasures(model,c("chisq.scaled ","df","pvalue.scaled","srmr","rmsea.scaled","cfi.scaled")),3)
     } else if(model@Options$test=="standard" ){
       fitted <- round(lavaan::fitmeasures(model,c("chisq","df","pvalue","srmr","rmsea","cfi")),3)}
     fitted_m <- as.matrix(fitted)
@@ -191,7 +191,7 @@ catOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLS
   R<-list()
   C<-list()
   final<-list()
-  for (i in 1:3)
+  for (i in 1:length(misspec_sum))
   {
     fit[[i]]<-cbind(misspec_sum[[i]], true_sum[[i]])
     fit[[i]]$Power<-seq(.95, 0.0, -.01)
@@ -212,16 +212,26 @@ catOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLS
   L0<-data.frame(cbind(true_sum[[1]]$SRMR_T,.95,true_sum[[1]]$RMSEA_T,0.95,true_sum[[1]]$CFI_T,0.95))%>%
     `colnames<-`(c("SRMR","PowerS","RMSEA","PowerR","CFI","PowerC"))
 
-  Fit<-round(rbind(L0,final[[1]],final[[2]],final[[3]]),3)
+  if(length(misspec_sum)==3) {
+    Fit<-round(rbind(L0,final[[1]],final[[2]],final[[3]]),3)
+  }
 
-  fit1<-unlist(Fit)%>% matrix(nrow=4, ncol=6) %>%
+  if(length(misspec_sum)==2) {
+    Fit<-round(rbind(L0,final[[1]],final[[2]]),3)
+  }
+
+  if(length(misspec_sum)==1) {
+    Fit<-round(rbind(L0,final[[1]]),3)
+  }
+
+  fit1<-unlist(Fit)%>% matrix(nrow=(length(misspec_sum)+1), ncol=6) %>%
     `colnames<-`(c("SRMR","PowerS","RMSEA","PowerR","CFI","PowerC"))
 
   PS<-paste(round(100*fit1[,2], 2), "%", sep="")
   PR<-paste(round(100*fit1[,4], 2), "%", sep="")
   PC<-paste(round(100*fit1[,6], 2), "%", sep="")
 
-  for (j in 2:4) {
+  for (j in 2:(length(misspec_sum)+1)) {
     if(fit1[j,2]<.50){fit1[j,1]<-"NONE"}
     if(fit1[j,4]<.50){fit1[j,3]<-"NONE"}
     if(fit1[j,6]<.50){fit1[j,5]<-"NONE"}
@@ -230,8 +240,8 @@ catOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLS
   fit1[,4]<-PR
   fit1[,6]<-PC
 
-  pp<-c("--","--","--","--")
-  pp0<-c("","","","")
+  pp<-c(rep("--",(length(misspec_sum)+1)))
+  pp0<-c(rep("",(length(misspec_sum)+1)))
 
   SS<-noquote(matrix(rbind(fit1[,1],fit1[,2],pp0),ncol=1))
   RR<-noquote(matrix(rbind(fit1[,3],fit1[,4],pp0),ncol=1))
@@ -240,10 +250,19 @@ catOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLS
   Table<-noquote(cbind(SS,RR,CC) %>%
                    `colnames<-`(c("SRMR","RMSEA","CFI")))
 
-  rownames(Table)<-c("Level-0","Specificity", "","Level-1", "Sensitivity","", "Level-2", "Sensitivity","", "Level-3", "Sensitivity","")
+  if(length(misspec_sum)==3) {
+    rownames(Table)<-c("Level-0","Specificity", "","Level-1", "Sensitivity","", "Level-2", "Sensitivity","", "Level-3", "Sensitivity","")
+  }
 
-  Table<-Table[1:11,]
+  if(length(misspec_sum)==2) {
+    rownames(Table)<-c("Level-0","Specificity", "","Level-1", "Sensitivity","", "Level-2", "Sensitivity","")
+  }
 
+  if(length(misspec_sum)==1) {
+    rownames(Table)<-c("Level-0","Specificity", "","Level-1", "Sensitivity","")
+  }
+
+  Table<-Table[1:(nrow(Table)-1),]
   #Put into list
   res$cutoffs <- Table
 
