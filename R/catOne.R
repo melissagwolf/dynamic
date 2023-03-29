@@ -92,7 +92,6 @@
 #' \donttest{catOne(model=manmod,n=6649,manual=TRUE)}
 #'
 
-
 catOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLSMV"){
   #If manual, expect manual (a la Shiny app)
   if(manual){
@@ -159,7 +158,7 @@ catOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLS
     if (model@Options$test=="satorra.bentler" |model@Options$test=="yuan.bentler.mplus" | model@Options$test=="yuan.bentler.mplus"){
       fitted <- round(lavaan::fitmeasures(model,c("chisq.scaled","df","pvalue.scaled","srmr","rmsea.robust","cfi.robust")),3)
     } else if (model@Options$test=="scaled.shifted" | model@Options$test=="mean.var.adusted"){
-      fitted <- round(lavaan::fitmeasures(model,c("chisq.scaled ","df","pvalue.scaled","srmr","rmsea.scaled","cfi.scaled")),3)
+      fitted <- round(lavaan::fitmeasures(model,c("chisq.scaled","df","pvalue.scaled","srmr","rmsea.scaled","cfi.scaled")),3)
     } else if(model@Options$test=="standard" ){
       fitted <- round(lavaan::fitmeasures(model,c("chisq","df","pvalue","srmr","rmsea","cfi")),3)}
     fitted_m <- as.matrix(fitted)
