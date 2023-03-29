@@ -2017,7 +2017,7 @@ one_fit_cat <- function(model,n,reps,threshold, estimator){
   ### "x" loop not present in true data generation function
   a1<-th(threshold)
   a2<-th2(threshold)
-  for (x in 1:3)
+  for (x in 1:length(misspec_dgm))
   {
     for (i in 1:ncol(a1))
     {
