@@ -7,7 +7,7 @@
 #' @importFrom purrr map map_dfr
 #' @import ggplot2
 #' @importFrom stats quantile qnorm
-#' #' @importFrom semTools bsBootMiss
+#' @importFrom semTools bsBootMiss
 
 
 ############################################################################
