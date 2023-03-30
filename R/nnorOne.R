@@ -22,10 +22,11 @@
 #' R package and the corresponding Shiny App.
 #' @param estimator Which estimator to use within the simulations (enter in quotes). The default is MLR
 #'
-#' @import dplyr lavaan simstandard ggplot2 stringr semTools MASS
+#' @import dplyr lavaan simstandard ggplot2 stringr MASS
 #' @importFrom purrr map map_dfr map2
 #' @importFrom tidyr unite extract
 #' @importFrom patchwork plot_layout plot_annotation wrap_plots
+#' @importFrom semTools bsBootMiss
 #'
 #' @author Daniel McNeish & Melissa G Wolf
 #'
