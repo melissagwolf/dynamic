@@ -7,6 +7,7 @@
 #' @importFrom purrr map map_dfr
 #' @import ggplot2
 #' @importFrom stats quantile qnorm
+#' #' @importFrom semTools bsBootMiss
 
 
 ############################################################################
@@ -2192,4 +2193,220 @@ one_df_cat <- function(model,n,reps,threshold, estimator){
 
   #Final table
   return(Table)
+}
+
+##################################################
+################# nnorOne ########################
+##################################################
+
+### One-factor: Simulate fit indices for misspecified model for all levels ###
+one_fit_nnor <- function(model,data, n,estimator,reps){
+
+  #Get clean model equation
+  mod <- cleanmodel(model)
+
+  #Get parameters for misspecified dgm
+  misspec_dgm <- DGM_one(model)
+
+  #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
+  r <- reps
+
+  miss<-list()
+  for(i in 1:length(misspec_dgm))
+  {
+    dat <- simstandard::sim_standardized_matrices(misspec_dgm[[i]])
+    x<-dat$Correlations$R
+    l<-nrow(x)
+    a<-x[1:(l-1),1:(l-1)]
+    a<-a[order(rownames(a)),order(colnames(a))]
+    ll<-nrow(a)
+    names<-colnames(a)
+
+    miss[[i]]<-a
+  }
+
+  data1<-data[,names]
+  #remove cases if all relevant variables are NA
+  data1<-data1[rowSums(is.na(data1)) != ncol(data1), ]
+
+  n <- base::min(nrow(data1),2000)
+
+  #vector of all 0s
+  mu<-c(colMeans(data1,na.rm=T))
+
+
+
+  data_m<-list()
+  for(i in 1:length(misspec_dgm))
+  {
+    data_m[[i]]<-semTools::bsBootMiss(Sigma =miss[[i]], Mu=mu, rawData = data1, nBoot=reps,bootSamplesOnly  = TRUE, seed=649364)
+  }
+
+  #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
+  se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
+  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+    ind<-c("srmr","rmsea.scaled","cfi.scaled")
+  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+    ind<-c("srmr","rmsea.robust","cfi.robust")
+  }  else {
+    ind<-c("srmr","rmsea","cfi")
+  }
+
+  #Run 500 cfa for each element in the list
+  misspec_cfa <- purrr::map(data_m, function(x) purrr::map(x, function(y) lavaan::cfa(model=mod,
+                                                                                      estimator=estimator,
+                                                                                      data=y,
+                                                                                      std.lv=TRUE,
+                                                                                      se=se,
+                                                                                      check.gradient=FALSE,
+                                                                                      check.post=FALSE,
+                                                                                      check.vcov=FALSE,
+                                                                                      control=list(rel.tol=.001))))
+
+  #Extract fit stats from each rep (list) into a data frame and clean using nested lapply
+  #map_dfr returns data frame instead of list
+  #for each misspecification level (in the list), access the lavaan objects (x)
+  #and extract the fit stats (y) - and return as a df
+  misspec_fit_sum <- purrr::map(misspec_cfa, function(x) purrr::map_dfr(x, function(y) lavaan::fitMeasures(y, ind)) %>%
+                                  `colnames<-`(c("SRMR_M","RMSEA_M","CFI_M")) %>%
+                                  dplyr::mutate(Type_M="Misspecified"))
+
+  set.seed(NULL)
+
+  return(misspec_fit_sum)
+
+}
+
+#### One_Factor: Function to create True DGM (aka, just the model the user read in) ####
+
+true_fit_one_nnor <- function(model,data,n,estimator,reps){
+
+  #Get clean model equation
+  mod <- cleanmodel(model)
+
+  true_dgm <- model
+
+  #Set Seed
+  set.seed(326267)
+
+  #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
+  r <- reps
+
+  dat <- simstandard::sim_standardized_matrices(true_dgm)
+  x<-dat$Correlations$R
+  l<-nrow(x)
+  a<-x[1:(l-1),1:(l-1)]
+  a<-a[order(rownames(a)),order(colnames(a))]
+  names<-colnames(a)
+  true<-a
+
+
+  data1<-data[,names]
+  #remove cases if all relevant variables are NA
+  data1<-data1[rowSums(is.na(data1)) != ncol(data1), ]
+
+  n <- base::min(nrow(data1),2000)
+
+  #vector of all 0s
+  mu<-c(colMeans(data1,na.rm=T))
+
+
+  data_t<-semTools::bsBootMiss(Sigma =true, Mu=mu, rawData = data1, nBoot=reps,bootSamplesOnly  = TRUE)
+
+
+  #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
+  se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
+  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+    ind<-c("srmr","rmsea.scaled","cfi.scaled")
+  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+    ind<-c("srmr","rmsea.robust","cfi.robust")
+  }  else {
+    ind<-c("srmr","rmsea","cfi")
+  }
+
+  #Run 500 cfa
+  true_cfa <- purrr::map(data_t,function(x) lavaan::cfa(model=mod,
+                                                        estimator=estimator,
+                                                        data=x,
+                                                        std.lv=TRUE,
+                                                        se=se,
+                                                        check.gradient=FALSE,
+                                                        check.post=FALSE,
+                                                        check.vcov=FALSE,
+                                                        control=list(rel.tol=.001)))
+
+  true_fit_sum <- purrr::map_dfr(true_cfa,~lavaan::fitMeasures(., ind)) %>%
+    `colnames<-`(c("SRMR_T","RMSEA_T","CFI_T")) %>%
+    dplyr::mutate(Type_T="True")
+
+  set.seed(NULL)
+
+  return(true_fit_sum)
+
+}
+
+#### One-Factor: Function to combine both model fit stats for all levels into one dataframe ####
+
+one_df_nnor <- function(model,data,n,estimator,reps){
+
+  #Use max sample size of 2000
+  n <- min(n,2000)
+
+  #Get fit stats for misspecified model
+  misspec_fit <- one_fit_nnor(model,data,n,estimator,reps)
+
+  #Get fit stats for correctly specified model
+  true_fit <- true_fit_one_nnor(model,data,n,estimator,reps)
+
+  #Produce final table by level
+  Table <- purrr::map(misspec_fit,~cbind(.,true_fit))
+
+  #Final table
+  return(Table)
+}
+
+data_nnor <- function(model,data, n,reps){
+
+  #Get parameters for misspecified dgm
+  mod <- cleanmodel(model)
+
+  true_dgm <- model
+
+  #Set Seed
+  set.seed(326267)
+
+  #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
+  r <- reps
+
+  dat <- simstandard::sim_standardized_matrices(true_dgm)
+  x<-dat$Correlations$R
+  l<-nrow(x)
+  a<-x[1:(l-1),1:(l-1)]
+  a<-a[order(rownames(a)),order(colnames(a))]
+  names<-colnames(a)
+  true<-a
+
+
+  data1<-data[,names]
+  #remove cases if all relevant variables are NA
+  data1<-data1[rowSums(is.na(data1)) != ncol(data1), ]
+
+  n <- base::min(nrow(data1),2000)
+
+  #vector of all 0s
+  mu<-c(colMeans(data1,na.rm=T))
+
+  data_t<-semTools::bsBootMiss(Sigma =true, Mu=mu, rawData = data1, nBoot=reps,bootSamplesOnly  = TRUE)
+
+  ##Aggregate all bootstrapped data into one matrix per level
+  data_t_flat<-list()
+
+  data_t_flat<-base::do.call(rbind, data_t)
+
+  miss_dat<-list()
+
+  miss_dat$data_t<-data_t_flat
+  miss_dat$data1<-data1
+
+  return(miss_dat)
 }
