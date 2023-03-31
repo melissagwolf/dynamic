@@ -636,8 +636,9 @@ multi_add_HB <- function(model){
                      dplyr::mutate(Div=L_Sq/E_Var) %>%
                      dplyr::group_by(lhs) %>%
                      dplyr::summarise(Sum=sum(Div)) %>%
-                     dplyr::mutate(H=((1+(Sum^-1))^-1)) %>%
-                     dplyr::select(-Sum) %>%
+                     dplyr::mutate(rand=runif(n=nrow(factors),0,.001)) %>%
+                     dplyr::mutate(H=((1+(Sum^-1))^-1)+rand) %>%
+                     dplyr::select(-Sum,-rand) %>%
                      dplyr::arrange(-H) %>%
                      `colnames<-`(c("rhs","H")))
 
@@ -2029,7 +2030,7 @@ one_fit_cat <- function(model,n,reps,threshold, estimator){
           !!rlang::sym(a2[,i]) >   a1[u,i] ~100*(u+1),
           TRUE ~ !!rlang::sym(a2[,i]))
         )
-      if(sum(!is.na(a1[,i])) > 2){
+      if(sum(!is.na(a1[,i])) > 1){
         for (j in 1:sum(!is.na(a1[,i]))) {
           all_data_misspec[[x]]<-all_data_misspec[[x]] %>%
             dplyr::mutate(!!a2[,i] := case_when(
@@ -2123,7 +2124,7 @@ true_fit_one_cat <- function(model,n,reps, threshold, estimator){
         !!rlang::sym(a2[,i]) >   a1[u,i] ~100*(u+1),
         TRUE ~ !!rlang::sym(a2[,i]))
       )
-    if(sum(!is.na(a1[,i])) > 2){
+    if(sum(!is.na(a1[,i])) > 1){
       for (j in 1:sum(!is.na(a1[,i]))) {
         all_data_true<-all_data_true%>%
           dplyr::mutate(!!a2[,i] := case_when(
