@@ -24,7 +24,7 @@
 #'
 #' @import dplyr lavaan simstandard ggplot2 stringr
 #' @importFrom purrr map map_dfr map2
-#' @importFrom tidyr unite extract
+#' @importFrom tidyr unite extract gather
 #' @importFrom patchwork plot_layout plot_annotation wrap_plots
 #' @importFrom semTools bsBootMiss
 #'
@@ -399,8 +399,8 @@ nnorOne <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="MLR",re
 
     jj<-as.data.frame(dataMiss$data_t)[,names(dataMiss$data1)]
 
-    aa<-gather(jj)
-    bb<-gather(dataMiss$data1)
+    aa<-tidyr::gather(jj)
+    bb<-tidyr::gather(dataMiss$data1)
 
     aa$model<-c("Bootstrapped Data")
     bb$model<-c("Original Data")
