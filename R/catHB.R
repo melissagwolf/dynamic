@@ -107,9 +107,25 @@
 catHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLSMV"){
   #If manual, expect manual (a la Shiny app)
   if(manual){
+
+    tryCatch(modelWithNum(model),
+             error=function(err5){
+               if (grepl("no method for coercing this S4 class to a vector", err5)){
+                 stop("dynamic Error: Did you accidentally include 'manual=TRUE' with a non-manually entered lavaan object?")
+               }
+             })
+
     n <- n
     model9 <- modelWithNum(model) #DELETE THRESHOLDS FROM MODEL STATEMENT
     threshold<-cleanthreshold(model) #COLLECT THRESHOLDS IN SEPARATE OBJECT TO PASS TO LATER FUNCTIONS
+
+    tryCatch(defre(model9,n),
+             error=function(err4){
+               if (grepl("non-numeric matrix extent", err4)){
+                 stop("dynamic Error: Did you forget to include a sample size with your manually entered model?")
+               }
+             })
+
   }else{
     #Use this to rewrite error message for when someone forgot to use manual=TRUE
     #But entered in model statement and sample size

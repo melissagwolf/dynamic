@@ -47,8 +47,24 @@ cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500)
 
   #If manual, expect manual (a la Shiny app)
   if(manual){
+
+    tryCatch(cleanmodel(model),
+             error=function(err5){
+               if (grepl("no method for coercing this S4 class to a vector", err5)){
+                 stop("dynamic Error: Did you accidentally include 'manual=TRUE' with a non-manually entered lavaan object?")
+               }
+             })
+
     n <- n
     model9 <- model
+
+    tryCatch(defre(model9,n),
+             error=function(err4){
+               if (grepl("non-numeric matrix extent", err4)){
+                 stop("dynamic Error: Did you forget to include a sample size with your manually entered model?")
+               }
+             })
+
   }else{
     #Use this to rewrite error message for when someone forgot to use manual=TRUE
     #But entered in model statement and sample size
