@@ -2197,6 +2197,219 @@ one_df_cat <- function(model,n,reps,threshold, estimator){
 }
 
 ##################################################
+################# catHB ##########################
+##################################################
+
+multi_fit_HB_cat <- function(model,n,reps, threshold, estimator){
+
+  #Get clean model equation
+  mod <- cleanmodel(model)
+
+  #Get parameters for misspecified dgm (this is a list)
+  misspec_dgm <- DGM_Multi_HB(model)
+
+  #Use max sample size of 2000
+  n <- min(n,2000)
+
+  #Set seed
+  set.seed(269854)
+
+  #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
+  r <- reps
+
+  #Simulate one large dataset for each misspecification (use map to apply across each
+  #element (set of misspecifications) in the list)
+  all_data_misspec <- purrr::map(misspec_dgm,~simstandard::sim_standardized(m=.,n=n*r,latent=FALSE,errors=FALSE))
+
+  a1<-th(threshold)
+  a2<-th2(threshold)
+  for (x in 1:length(misspec_dgm))
+  {
+    for (i in 1:ncol(a1))
+    {
+      u<- as.numeric(sum(!is.na(a1[,i])))
+      all_data_misspec[[x]]<-all_data_misspec[[x]] %>%
+        dplyr::mutate(!!a2[,i] := case_when(
+          !!rlang::sym(a2[,i])  <= a1[1,i] ~100,
+          !!rlang::sym(a2[,i]) >   a1[u,i] ~100*(u+1),
+          TRUE ~ !!rlang::sym(a2[,i]))
+        )
+      if(sum(!is.na(a1[,i])) > 1){
+        for (j in 1:sum(!is.na(a1[,i]))) {
+          all_data_misspec[[x]]<-all_data_misspec[[x]] %>%
+            dplyr::mutate(!!a2[,i] := case_when(
+              between( !!rlang::sym(a2[,i]) , a1[j,i], a1[j+1,i]) ~ as.numeric(100*(j+1)),
+              TRUE~ !!rlang::sym(a2[,i]))
+            )
+        }
+      }
+    }
+  }
+
+  #Create indicator to split into 500 datasets for 500 reps
+  rep_id_misspec <- rep(1:r,n)
+
+  #Combine indicator with dataset for each element in list
+  dat_rep_misspec <- purrr::map(all_data_misspec,~cbind(.,rep_id_misspec))
+
+  #Group and list
+  misspec_data <- purrr::map(dat_rep_misspec,~group_by(.,rep_id_misspec) %>%
+                               tidyr::nest())
+
+  #Grab data level of the list
+  data <- purrr::map(misspec_data,2)
+
+  #categorical vector of categorical items
+  clist<-cat_items(threshold)[,1]
+
+  #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
+  se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
+  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+    ind<-c("srmr","rmsea.scaled","cfi.scaled")
+  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+    ind<-c("srmr","rmsea.robust","cfi.robust")
+  }  else {
+    ind<-c("srmr","rmsea","cfi")
+  }
+
+  #Run 500 cfa for each element in the list
+  misspec_cfa <- purrr::map(data, function(x) purrr::map(x, function(y) lavaan::cfa(model=mod,
+                                                                                    estimator=estimator,
+                                                                                    data=y,
+                                                                                    ordered=clist,
+                                                                                    std.lv=TRUE,
+                                                                                    se=se,
+                                                                                    check.gradient=FALSE,
+                                                                                    check.post=FALSE,
+                                                                                    check.vcov=FALSE,
+                                                                                    control=list(rel.tol=.001))))
+
+  #Extract fit stats from each rep (list) into a data frame and clean using nested lapply
+  #map_dfr returns data frame instead of list
+  #for each misspecification level (in the list), access the lavaan objects (x)
+  #and extract the fit stats (y) - and return as a df
+  misspec_fit_sum <- purrr::map(misspec_cfa, function(x) purrr::map_dfr(x, function(y) lavaan::fitMeasures(y, ind)) %>%
+                                  `colnames<-`(c("SRMR_M","RMSEA_M","CFI_M")) %>%
+                                  dplyr::mutate(Type_M="Misspecified"))
+  set.seed(NULL)
+
+  return(misspec_fit_sum)
+
+}
+
+true_fit_HB_cat <- function(model,n,reps, threshold, estimator){
+
+  #Get clean model equation
+  mod <- cleanmodel(model)
+
+  #Get parameters for true DGM
+  true_dgm <- model
+
+  #Use max sample size of 10000
+  n <- base::min(n,2000)
+
+  #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
+  r <- reps
+
+  #Set Seed
+  set.seed(267326)
+
+  #Simulate one large dataset
+  all_data_true <- simstandard::sim_standardized(m=true_dgm,n = n*r,
+                                                 latent = FALSE,
+                                                 errors = FALSE)
+
+  a1<-th(threshold)
+  a2<-th2(threshold)
+
+  for (i in 1:ncol(a1))
+  {
+    u<- as.numeric(sum(!is.na(a1[,i])))
+    all_data_true<-all_data_true%>%
+      dplyr::mutate(!!a2[,i] := case_when(
+        !!rlang::sym(a2[,i])  <= a1[1,i] ~100,
+        !!rlang::sym(a2[,i]) >   a1[u,i] ~100*(u+1),
+        TRUE ~ !!rlang::sym(a2[,i]))
+      )
+    if(sum(!is.na(a1[,i])) > 1){
+      for (j in 1:sum(!is.na(a1[,i]))) {
+        all_data_true<-all_data_true%>%
+          dplyr::mutate(!!a2[,i] := case_when(
+            between( !!rlang::sym(a2[,i]) , a1[j,i], a1[j+1,i]) ~ as.numeric(100*(j+1)),
+            TRUE~ !!rlang::sym(a2[,i]))
+          )
+      }
+    }
+  }
+
+  #Create indicator to split into 500 datasets for 500 reps
+  rep_id_true <- base::rep(1:r,n)
+
+  #Combine indicator with dataset
+  dat_rep_true <- base::cbind(all_data_true,rep_id_true)
+
+  #Group and list
+  true_data <- dat_rep_true %>%
+    dplyr::group_by(rep_id_true) %>%
+    tidyr::nest() %>%
+    base::as.list()
+
+  #create character vector listing categorical items
+  clist<-cat_items(threshold)[,1]
+
+  #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
+  se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
+  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+    ind<-c("srmr","rmsea.scaled","cfi.scaled")
+  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+    ind<-c("srmr","rmsea.robust","cfi.robust")
+  }  else {
+    ind<-c("srmr","rmsea","cfi")
+  }
+
+  #Run 500 cfa
+  true_cfa <- purrr::map(true_data$data,function(x) lavaan::cfa(model=mod,
+                                                                estimator=estimator,
+                                                                data=x,
+                                                                ordered=clist,
+                                                                std.lv=TRUE,
+                                                                se=se,
+                                                                check.gradient=FALSE,
+                                                                check.post=FALSE,
+                                                                check.vcov=FALSE,
+                                                                control=list(rel.tol=.001)))
+
+  true_fit_sum <- purrr::map_dfr(true_cfa,~lavaan::fitMeasures(., ind)) %>%
+    `colnames<-`(c("SRMR_T","RMSEA_T","CFI_T")) %>%
+    dplyr::mutate(Type_T="True")
+
+  set.seed(NULL)
+
+  return(true_fit_sum)
+
+}
+
+#### Multi-Factor: Function to combine both model fit stats for all levels into one dataframe ####
+
+multi_df_HB_cat <- function(model,n,reps, threshold,estimator){
+
+  #Use max sample size of 2000
+  n <- min(n,2000)
+
+  #Get fit stats for misspecified model
+  misspec_fit <- multi_fit_HB_cat(model,n,reps,threshold, estimator)
+
+  #Get fit stats for correctly specified model
+  true_fit <- true_fit_HB_cat(model,n,reps,threshold, estimator)
+
+  #Produce final table of fit indices for each level (as a list)
+  Table <- purrr::map(misspec_fit,~cbind(.,true_fit))
+
+  #Final table
+  return(Table)
+}
+
+##################################################
 ################# nnorOne ########################
 ##################################################
 
