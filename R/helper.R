@@ -2263,7 +2263,7 @@ multi_fit_HB_cat <- function(model,n,reps, threshold, estimator){
   clist<-cat_items(threshold)[,1]
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
-  se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
+  se<-ifelse(startsWith(estimator,"ULS"),"robust.sem","none")
   if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
     ind<-c("srmr","rmsea.scaled","cfi.scaled")
   } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
@@ -2358,7 +2358,7 @@ true_fit_HB_cat <- function(model,n,reps, threshold, estimator){
   clist<-cat_items(threshold)[,1]
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
-  se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
+  se<-ifelse(startsWith(estimator,"ULS"),"robust.sem","none")
   if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
     ind<-c("srmr","rmsea.scaled","cfi.scaled")
   } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
