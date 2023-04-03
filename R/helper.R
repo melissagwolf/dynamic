@@ -2593,10 +2593,11 @@ data_nnor <- function(model,data, n,reps){
   #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
   r <- reps
 
+  nf<-number_factor(model)
   dat <- simstandard::sim_standardized_matrices(true_dgm)
   x<-dat$Correlations$R
   l<-nrow(x)
-  a<-x[1:(l-1),1:(l-1)]
+  a<-x[1:(l-nf),1:(l-nf)]
   a<-a[order(rownames(a)),order(colnames(a))]
   names<-colnames(a)
   true<-a
