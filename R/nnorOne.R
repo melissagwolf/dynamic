@@ -344,7 +344,7 @@ nnorOne <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="MLR",re
                                                             ".06"="black"))+
                                 scale_linetype_manual(name="Cutoff Values",
                                                       labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
-                                                      values=c("final$RMSEA_M[1]"="longdash",
+                                                      values=c("final$RMSEA[1]"="longdash",
                                                                ".06"="dotted"))+
                                 theme(axis.title.y = element_blank(),
                                       axis.text.y = element_blank(),
