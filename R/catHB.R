@@ -350,7 +350,7 @@ catHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLSM
                                                            ".08"="black"))+
                                scale_linetype_manual(name="Cutoff Values",
                                                      labels=c("Hu & Bentler Cutoff","Dynamic Cutoff"),
-                                                     values=c("final$SRMR_M[1]"="longdash",
+                                                     values=c("final$SRMR[1]"="longdash",
                                                               ".08"="dotted"))+
                                theme(axis.title.y = element_blank(),
                                      axis.text.y = element_blank(),
