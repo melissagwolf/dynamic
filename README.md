@@ -11,10 +11,10 @@ models that are tailored to the user’s model statement, model type, and
 sample size.
 
 This is the counterpart of the Shiny Application,
-<a href="https://dynamicfit.app/connect/" target="_parent">dynamicfit.app</a>.
-The Shiny app and the R package will give you the same results. If you
-are comfortable with R, consider using the package during high traffic
-times to reduce server burden.
+<a href="https://dynamicfit.app/connect/"
+target="_parent">dynamicfit.app</a>. The Shiny app and the R package
+will give you the same results. If you are comfortable with R, consider
+using the package during high traffic times to reduce server burden.
 
 ## Installation
 
@@ -23,6 +23,19 @@ issues on GitHub. You can install the released version of dynamic from
 [CRAN](https://CRAN.R-project.org) with:
 
 `install.packages("dynamic")`
+
+Currently, the functions for categorical data (`catOne` and `catHB`) and
+for non-normal continuous data (`nnorOne` and `nnorHB`) are only
+available from the GitHub package and are not yet available on CRAN or
+the Shiny application.
+
+To install the version of the package that supports these functions,
+use:
+
+``` r
+library(devtools)
+devtools::install_github("melissagwolf/dynamic")
+```
 
 ## Example
 
@@ -44,4 +57,8 @@ cfaOne(manmod,500,manual=TRUE)
 
 ## Vignette
 
-Click [here](https://rpubs.com/melissagwolf/847463).
+A vignette for the multivariate normal functions `cfaOne` and `cfaHB`
+can be found [here](https://rpubs.com/melissagwolf/847463).
+
+A vignette for the categorical data functions `catOne` and `catHB` can
+be found [here](https://rpubs.com/dmcneish/1025400).
