@@ -263,7 +263,7 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500){
                                                            ".08"="black"))+
                                scale_linetype_manual(name="Cutoff Values",
                                                      labels=c("Dynamic Cutoff","Hu & Benter Cutoff"),
-                                                     values=c("misspec_sum$SRMR_M[1]"="longdash",
+                                                     values=c("misspec_sum$SRMR[1]"="longdash",
                                                               ".08"="dotted"))+
                                theme(axis.title.y = element_blank(),
                                      axis.text.y = element_blank(),
