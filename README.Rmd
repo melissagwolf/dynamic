@@ -70,3 +70,5 @@ cfaOne(manmod,500,manual=TRUE)
 A vignette for the multivariate normal functions `cfaOne` and `cfaHB` can be found [here](https://rpubs.com/melissagwolf/847463).
 
 A vignette for the categorical data functions `catOne` and `catHB` can be found [here](https://rpubs.com/dmcneish/1025400).
+
+A vignette for non-normal and/or missing data function `nnorOne` and `nnorHB` can be found [here](https://rpubs.com/dmcneish/1033222).
