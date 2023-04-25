@@ -47,7 +47,7 @@ devtools::install_github("melissagwolf/dynamic")
 #devtools::install_github("melissagwolf/dynamic")
 ```
 
-## Example
+## Example 
 
 ```{r example, eval=FALSE}
 library(dynamic)
