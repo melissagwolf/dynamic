@@ -115,6 +115,10 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500){
     stop("dynamic Error: There are not enough free items to produce all misspecification levels.")
   }
 
+  if (estimator="MLR"){
+    stop("dynamic Error: the cfaHB function generates data from multivariate normal distributions, so the MLR estimator is equivalent to the ML estimator. Either change the estimator to ML or use the nnorHB function if you wish to derive cutoffs that are sensitive to non-normality")
+  }
+
   #Create list to store outputs (table and plot)
   res <- list()
 
