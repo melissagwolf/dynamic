@@ -27,6 +27,7 @@ Imports:
     magrittr (>= 1.5),
     tibble (>= 3.0.0),
     patchwork (>= 1.1.1),
+    semTools (>= 0.5.5),
     stringr (>= 1.4.0),
     purrr (>= 0.3.3)
 Suggests: 
