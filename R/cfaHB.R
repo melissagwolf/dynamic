@@ -125,9 +125,9 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500){
   if (startsWith(estimator,"U")|startsWith(estimator,"W")){
     message("dynamic Warning: Cutoffs are interpretable if normality is reasonble to assume.
          The ULS and WLS families of estimators are often used for non-normal data,
-         so if you are trying to derive cutoffs that will be sensitive to non-normality,
-         the nnorHB function may provide more accurate cuttofs. Treating items as categorical
-         is supported with the catHB function.")
+         so if you are trying to derive cutoffs that will be sensitive to 
+         non-normality, the nnorHB function may provide more accurate cuttofs. Treating items 
+         as categorical is supported with the catHB function.")
   }
 
   #Create list to store outputs (table and plot)
