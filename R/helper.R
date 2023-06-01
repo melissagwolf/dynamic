@@ -3073,3 +3073,81 @@ multi_df_likert <- function(model,data,n,estimator,reps){
   return(Table)
 }
 
+data_likert <- function(model,data, n,reps){
+
+  #Get clean model equation
+  mod <- cleanmodel(model)
+
+  true_dgm <- model
+
+  #Use max sample size of 10000
+  n <- base::min(n,2000)
+
+  #Set Seed
+  set.seed(326267)
+
+  #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
+  r <- reps
+
+  #Simulate one large dataset
+  all_data_true <- simstandard::sim_standardized(m=true_dgm,n = n*r,
+                                                 latent = FALSE,
+                                                 errors = FALSE)
+
+  names<-colnames(all_data_true)
+
+  #identify names of variables from dataset
+  data1<-data[,names]
+  #remove cases if all relevant variables are NA
+  data1<-data1[rowSums(is.na(data1)) != ncol(data1), ]
+
+  #create empty matrix for proportions (g) and threshold (p)
+  g<-matrix(nrow=(max(data1)-min(data1)), ncol=ncol(data1))
+  p<-g
+
+  #loop through all variables in fitted model
+  for (i in 1:ncol(data1)){
+    #loop through all categories in fitted model
+    for (h in min(data1[,i]):(max(data1[,i])-1)){
+      #proportion of responses at or below each category
+      g[h,i]<-sum(tabulate(data1[,i])[names(table(data1[,i]))<=h])/nrow(data1)
+      #inverse standard normal to determine thresholds
+      p[h,i]<-qnorm(c(g[h,i]))
+      dp<-as.data.frame(p)
+    }
+  }
+
+  colnames(dp)<-colnames(data1)
+  a2<-colnames(dp)
+
+  for (i in 1:ncol(dp))
+  {# first loop transforms highest category
+    u<- as.numeric(sum(!is.na(dp[,i])))
+    all_data_true<-all_data_true %>%
+      dplyr::mutate(!!a2[i] := case_when(
+        !!rlang::sym(a2[i])  <= dp[1,i] ~100,
+        !!rlang::sym(a2[i]) >   dp[u,i] ~100*(u+1),
+        TRUE ~ !!rlang::sym(a2[i]))
+      )
+    #second loop transforms all lower categories
+    if(sum(!is.na(dp[,i])) > 1){
+      for (j in 1:sum(!is.na(dp[,i]))) {
+        all_data_true<-all_data_true %>%
+          dplyr::mutate(!!a2[i] := case_when(
+            between( !!rlang::sym(a2[i]) , dp[j,i], dp[j+1,i]) ~ as.numeric(100*(j+1)),
+            TRUE~ !!rlang::sym(a2[i]))
+          )
+      }
+    }
+  }
+  #loops multiply by 100 to avoid overwriting MVN data with values above 1
+  #divide by 100 to put things back onto Likert metric
+  all_data_true<-all_data_true/100
+
+  miss_dat<-list()
+
+  miss_dat$sim<-all_data_true
+  miss_dat$orig<-data1
+
+  return(miss_dat)
+}
