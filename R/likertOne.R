@@ -1,6 +1,6 @@
-#' @title Dynamic fit index (DFI) cutoffs multi-factor CFA models with Likert-type items
+#' @title Dynamic fit index (DFI) cutoffs one-factor CFA models with Likert-type items
 #'
-#' @description This function generates DFI cutoffs for multi-factor CFA models that treats Likert-type items as continuous.
+#' @description This function generates DFI cutoffs for one-factor CFA models that treats Likert-type items as continuous.
 #'  The default argument is a singular argument: a \code{\link{lavaan}} object from
 #'  the \code{\link{cfa}} function. The function can also accommodate manual entry of the model statement and
 #'  sample size. A primary difference in likert DFI functions is that a dataset must also be provided in the 'data' argument
@@ -18,7 +18,7 @@
 #' This also includes plots to visualize how close the simulated data are to the original data.
 #' @param manual If you entered a \code{\link{lavaan}} object, keep this set to FALSE (the default).
 #' If you manually entered standardized loadings and sample size, set this to TRUE.
-#' @param reps The number of replications used in your simulation. This is set to 500 by default.
+#' @param reps The number of replications used in your simulation. This is set to 250 by default.
 #' @param estimator Which estimator to use within the simulations (enter in quotes). The default is ML
 #'
 #' @import dplyr lavaan simstandard ggplot2 stringr
@@ -30,13 +30,13 @@
 #'
 #' Maintainer: Daniel McNeish <dmcneish@asu.edu>
 #'
-#' @rdname likertHB
+#' @rdname likertOne
 #'
 #' @return Dynamic fit index (DFI) cutoffs for SRMR, RMSEA, and CFI.
 #' @export
 
 
-likertHB <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=250){
+likertOne <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=250){
 
   #If manual, expect manual (a la Shiny app)
   if(manual){
@@ -88,8 +88,8 @@ likertHB <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",re
     stop("dynamic Error: One of your loadings or correlations has an absolute value of 1 or above (an inadmissible value). Please use standardized loadings. If all of your loadings are under 1, try looking for a missing decimal somewhere in your model statement.")
   }
 
-  if (number_factor(model9)<2){
-    stop("dynamic Error: You entered a one-factor model.  Use likertOne function instead.")
+  if (number_factor(model9)>1){
+    stop("dynamic Error: You entered a multi-factor model.  Use likertHB instead.")
   }
 
 
@@ -124,15 +124,15 @@ likertHB <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",re
   }
 
   #Run simulation
-  tryCatch(multi_df_likert(model9,data,n,estimator, reps),
+  tryCatch(one_df_likert(model9,data,n,estimator, reps),
            error=function(err3){
              if (grepl("is missing, with no default", err3)){
                stop("dynamic Error: Did you forget to include a dataset? likert functions in dynamic require the original data to accurately simulate data that have the same
-                      response proportions as the original data. If you do not have the data, you can use the cfaHB function,
-                      although this will assume truly continuous responses rather than Likert responses. ")
+                      response proportions as the original data. If you do not have the data, you can use the cfaOne function,
+                      although this will assume truly continuous responses rather than Likert responses.")
              }
            })
-  results <- multi_df_likert(model9,data,n,estimator, reps)
+  results <- one_df_likert(model9,data,n,estimator, reps)
 
   #Save the data and make it exportable
   res$data <- fit_data(results)
@@ -199,29 +199,14 @@ likertHB <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",re
   pp<-c(rep("--",(length(misspec_sum)+1)))
   pp0<-c(rep("",(length(misspec_sum)+1)))
 
-  #matrix of cross-loadings added at each level
-  mag <- multi_add_HB(model9) %>%
-    tidyr::separate(V1,into=c("a","b","Magnitude","d","e"),sep=" ") %>%
-    select(Magnitude) %>%
-    mutate(Magnitude=as.numeric(Magnitude),
-           Magnitude=round(Magnitude,digits=3))
-
-  #Create column of cross-loadings added at each level
-  mname<-c("NONE","","")
-  for (i in 1:length(misspec_sum)){
-    mi<-c(mag[i,],"","")
-    mname<-cbind(mname,mi)
-  }
-
   #format column for each index and the misspecification magnitude
   SS<-noquote(matrix(rbind(fit1[,1],fit1[,2],pp0),ncol=1))
   RR<-noquote(matrix(rbind(fit1[,3],fit1[,4],pp0),ncol=1))
   CC<-noquote(matrix(rbind(fit1[,5],fit1[,6],pp0),ncol=1))
-  MM<-noquote(matrix(mname, ncol=1))
 
   #bind columns together into one table
-  Table<-noquote(cbind(SS,RR,CC,MM) %>%
-                   `colnames<-`(c("SRMR","RMSEA","CFI","Magnitude")))
+  Table<-noquote(cbind(SS,RR,CC)) %>%
+                   `colnames<-`(c("SRMR","RMSEA","CFI"))
 
   #update row names
   rname<-c("Level-0","Specificity", "")
@@ -383,22 +368,22 @@ likertHB <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",re
   }
 
   #Create object (necessary for subsequent print statement)
-  class(res) <- 'likertHB'
+  class(res) <- 'likertOne'
 
   return(res)
 
 }
 
-#' @method print likertHB
-#' @param x likertHB object
+#' @method print likertOne
+#' @param x likertOne object
 #' @param ... other print parameters
-#' @rdname likertHB
+#' @rdname likertOne
 #' @export
 
 #Print suppression/organization statement for list
 #Needs same name as class, not function name
 #Need to add ... param or will get error message in CMD check
-print.likertHB <- function(x,...){
+print.likertOne <- function(x,...){
 
   #Automatically return fit cutoffs
   base::cat("Your DFI cutoffs: \n")

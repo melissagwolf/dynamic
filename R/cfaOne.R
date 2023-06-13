@@ -115,7 +115,7 @@ cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500)
   if (startsWith(estimator,"U")|startsWith(estimator,"W")){
     message("dynamic Warning: Cutoffs are interpretable if normality is reasonble to assume. The ULS and WLS families of estimators are often used for non-normal data, so if you are trying to derive cutoffs that will be sensitive to non-normality, the nnorOne function may provide more accurate cuttofs. Treating items as categorical is supported with the catOne function.")
   }
-  
+
   #Create list to store outputs (table and plot)
   res <- list()
 
@@ -140,12 +140,12 @@ cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500)
   res$data <- fit_data(results)
 
   #For each list element (misspecification) compute the cutoffs
-  misspec_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_M=stats::quantile(SRMR_M, c(.05,.1)),
+  misspec_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_M=stats::quantile(SRMR_M, c(.05,.1)),
                                                       RMSEA_M=stats::quantile(RMSEA_M, c(.05,.1)),
                                                       CFI_M=stats::quantile(CFI_M, c(.95,.9))))
 
   #For the true model, compute the cutoffs (these will all be the same - just need in list form)
-  true_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_T=stats::quantile(SRMR_T, c(.95,.9)),
+  true_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_T=stats::quantile(SRMR_T, c(.95,.9)),
                                                    RMSEA_T=stats::quantile(RMSEA_T, c(.95,.9)),
                                                    CFI_T=stats::quantile(CFI_T, c(.05,.1))))
 
@@ -201,12 +201,12 @@ cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500)
   if(plot){
 
     #For each list element (misspecification) compute the cutoffs
-    misspec_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_M=stats::quantile(SRMR_M, c(.05,.1)),
+    misspec_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_M=stats::quantile(SRMR_M, c(.05,.1)),
                                                         RMSEA_M=stats::quantile(RMSEA_M, c(.05,.1)),
                                                         CFI_M=stats::quantile(CFI_M, c(.95,.9))))
 
     #For the true model, compute the cutoffs (these will all be the same - just need in list form)
-    true_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_T=stats::quantile(SRMR_T, c(.95,.9)),
+    true_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_T=stats::quantile(SRMR_T, c(.95,.9)),
                                                      RMSEA_T=stats::quantile(RMSEA_T, c(.95,.9)),
                                                      CFI_T=stats::quantile(CFI_T, c(.05,.1))))
 

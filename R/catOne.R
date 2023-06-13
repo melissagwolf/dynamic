@@ -147,7 +147,7 @@ catOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLS
   }
 
   if (number_factor(model9)>1){
-    stop("dynamic Error: You entered a multi-factor model.  Use cfaHB instead.")
+    stop("dynamic Error: You entered a multi-factor model.  Use catHB instead.")
   }
 
   if (defre(model9,n)==0){
@@ -192,12 +192,12 @@ catOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLS
   res$data <- fit_data(results)
 
   #For each list element (misspecification) compute the cutoffs
-  misspec_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_M=stats::quantile(SRMR_M, c(seq(0.05,1,0.01))),
+  misspec_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_M=stats::quantile(SRMR_M, c(seq(0.05,1,0.01))),
                                                       RMSEA_M=stats::quantile(RMSEA_M, c(seq(0.05,1,0.01))),
                                                       CFI_M=stats::quantile(CFI_M, c(seq(0.95,0,-0.01)))))
 
   #For the true model, compute the cutoffs (these will all be the same - just need in list form)
-  true_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_T=stats::quantile(SRMR_T, c(.95)),
+  true_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_T=stats::quantile(SRMR_T, c(.95)),
                                                    RMSEA_T=stats::quantile(RMSEA_T, c(.95)),
                                                    CFI_T=stats::quantile(CFI_T, c(.05))))
 
