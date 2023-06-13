@@ -10,7 +10,7 @@
 #' The app-based version of this function can be found at \href{https://dynamicfit.app/}{dynamicfit.app}.
 #'
 #' @param model This can either be a \code{\link{lavaan}} object from the \code{\link{cfa}} function,
-#' OR a model statement written in \code{\link{lavaan}} \code{\link{model.syntax}} with standardized loadings and thresholds.
+#' OR a model statement written in \code{\link{lavaan}} \code{\link{model.syntax}} with standardized loadings
 #' @param data An empirical dataset to which a modified Bollen-Stine bootstrap will be applied to create hypothetical misspecified data
 #' @param n If you entered a \code{\link{lavaan}} object for model, leave this blank.
 #' Otherwise, enter your sample size (numeric).
