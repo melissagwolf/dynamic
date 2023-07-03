@@ -608,7 +608,7 @@ multi_add_HB <- function(model){
     dplyr::filter(lhs != rhs)
 
   #read in number of factors
-  num_fact <- number_factor(model2)
+  num_fact <- number_factor(model)
 
   #read in viable items from each factor
   itemoptions <- multi_num_HB(model)
