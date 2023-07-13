@@ -2850,7 +2850,7 @@ multi_fit_likert <- function(model,data, n,estimator,reps){
     #loop through all categories in fitted model
     for (h in min(data1[,i]):(max(data1[,i])-1)){
       #proportion of responses at or below each category
-      g[h,i]<-sum(tabulate(data1[,i])[names(table(data1[,i]))<=h])/nrow(data1)
+      g[h,i]<-sum(table(data1[,i])[names(table(data1[,i]))<=h])/nrow(data1)
       #inverse standard normal to determine thresholds
       p[h,i]<-qnorm(c(g[h,i]))
       dp<-as.data.frame(p)
@@ -2976,7 +2976,7 @@ true_fit_multi_likert <- function(model,data,n,estimator,reps){
     #loop through all categories in fitted model
     for (h in min(data1[,i]):(max(data1[,i])-1)){
       #proportion of responses at or below each category
-      g[h,i]<-sum(tabulate(data1[,i])[names(table(data1[,i]))<=h])/nrow(data1)
+      g[h,i]<-sum(table(data1[,i])[names(table(data1[,i]))<=h])/nrow(data1)
       #inverse standard normal to determine thresholds
       p[h,i]<-qnorm(c(g[h,i]))
       dp<-as.data.frame(p)
@@ -3110,7 +3110,7 @@ data_likert <- function(model,data, n,reps){
     #loop through all categories in fitted model
     for (h in min(data1[,i]):(max(data1[,i])-1)){
       #proportion of responses at or below each category
-      g[h,i]<-sum(tabulate(data1[,i])[names(table(data1[,i]))<=h])/nrow(data1)
+      g[h,i]<-sum(table(data1[,i])[names(table(data1[,i]))<=h])/nrow(data1)
       #inverse standard normal to determine thresholds
       p[h,i]<-qnorm(c(g[h,i]))
       dp<-as.data.frame(p)
@@ -3199,7 +3199,7 @@ one_fit_likert <- function(model,data,n,estimator,reps){
     #loop through all categories in fitted model
     for (h in min(data1[,i]):(max(data1[,i])-1)){
       #proportion of responses at or below each category
-      g[h,i]<-sum(tabulate(data1[,i])[names(table(data1[,i]))<=h])/nrow(data1)
+      g[h,i]<-sum(table(data1[,i])[names(table(data1[,i]))<=h])/nrow(data1)
       #inverse standard normal to determine thresholds
       p[h,i]<-qnorm(c(g[h,i]))
       dp<-as.data.frame(p)
@@ -3326,7 +3326,7 @@ true_fit_one_likert <- function(model,data,n,estimator,reps){
     #loop through all categories in fitted model
     for (h in min(data1[,i]):(max(data1[,i])-1)){
       #proportion of responses at or below each category
-      g[h,i]<-sum(tabulate(data1[,i])[names(table(data1[,i]))<=h])/nrow(data1)
+      g[h,i]<-sum(table(data1[,i])[names(table(data1[,i]))<=h])/nrow(data1)
       #inverse standard normal to determine thresholds
       p[h,i]<-qnorm(c(g[h,i]))
       dp<-as.data.frame(p)
