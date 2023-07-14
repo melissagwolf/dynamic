@@ -67,5 +67,6 @@ A vignette for non-normal continuous data and/or missing data functions
 `nnorOne` and `nnorHB` can be found
 [here](https://rpubs.com/dmcneish/1033222)
 
-A vignette for functions for treating Likert data as continuous is
-coming soon.
+A vignette for functions`likertOne` and `likertHB` for treating Likert
+responses as continuous can be found
+[here](https://rpubs.com/dmcneish/1062525)
