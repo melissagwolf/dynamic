@@ -30,6 +30,8 @@
 #' @importFrom purrr map map_dfr map2
 #' @importFrom tidyr unite extract
 #' @importFrom patchwork plot_layout plot_annotation wrap_plots
+#' @importFrom semTools bsBootMiss
+
 #'
 #' @author Daniel McNeish & Melissa G Wolf
 #'
@@ -39,8 +41,6 @@
 #'
 #' @return Direct Discrepancy Dynamic fit index (DFI) cutoffs for CFI, RMSEA, and RMSEA 90% CI.
 #' @export
-#'
-#'
 
 ###########################################################
 # Bookkeeping functions
