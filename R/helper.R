@@ -3494,7 +3494,7 @@ rlkjcorr <- function (n, K, eta = 1) {
 miss_fit <- function(model,data,n,reps,estimator,MAD,scale){
 
   #strip estimates from model statement
-  mod <- cleanmodel_DDFI(model)
+  mod <- cleanmodel_3DFI(model)
 
   # if categorical is True, remove thresholds from model statement as well
   if((scale %in% c("categorical"))) {
@@ -3887,7 +3887,7 @@ miss_fit <- function(model,data,n,reps,estimator,MAD,scale){
 true_fit<- function(model,data,n,reps, estimator, MAD,scale){
 
   #strip estimates from model statement
-  mod <- cleanmodel_DDFI(model)
+  mod <- cleanmodel_3DFI(model)
 
   # if categorical==T, remove thresholds from model statement as well
   if(scale %in% c("categorical")) {
