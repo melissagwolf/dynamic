@@ -207,9 +207,9 @@ for (i in 1:length(misspec_sum))
   fit[[i]]$R<-ifelse(fit[[i]]$RMSEA_M >= fit[[i]]$RMSEA_T, 1, 0)
   fit[[i]]$C<-ifelse(fit[[i]]$CFI_M <= fit[[i]]$CFI_T, 1, 0)
 
-  RCI[[i]]<-subset(fit[[i]], subset=!duplicated(fit[[i]][('R')]), select=c("RMSEA_CI_UPPER_M","Power","R")) %>% filter(R==1)
-  R[[i]]<-subset(fit[[i]], subset=!duplicated(fit[[i]][('R')]), select=c("RMSEA_M","Power","R")) %>% filter(R==1)
-  C[[i]]<-subset(fit[[i]], subset=!duplicated(fit[[i]][('C')]), select=c("CFI_M","Power","C"))  %>% filter(C==1)
+  RCI[[i]]<-subset(fit[[i]], subset=!duplicated(fit[[i]][('R')]), dplyr::select=c("RMSEA_CI_UPPER_M","Power","R")) %>% filter(R==1)
+  R[[i]]<-subset(fit[[i]], subset=!duplicated(fit[[i]][('R')]), dplyr::select=c("RMSEA_M","Power","R")) %>% filter(R==1)
+  C[[i]]<-subset(fit[[i]], subset=!duplicated(fit[[i]][('C')]), dplyr::select=c("CFI_M","Power","C"))  %>% filter(C==1)
 
   colnames(R[[i]])<-c("RMSEA","PowerR")
   colnames(C[[i]])<-c("CFI","PowerC")
