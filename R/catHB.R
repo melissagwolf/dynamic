@@ -476,3 +476,4 @@ print.catHB <- function(x,...){
   #Hides this function
   base::invisible()
 }
+
