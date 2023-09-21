@@ -3423,3 +3423,752 @@ one_df_likert <- function(model,data,n,estimator,reps){
   #Final table
   return(Table)
 }
+
+##################################################
+################# DDDFI ##########################
+##################################################
+
+#Function to strip estimates from model statement
+#Used to apply fitted model to simulated data
+#different from original cleanmodel function to allow..
+#... for broader types of paths
+cleanmodel_3DFI <- function(model){
+
+  suppressMessages(  model %>%
+                       lavaan::lavaanify(fixed.x = FALSE) %>%
+                       dplyr::filter(lhs != rhs) %>%
+                       dplyr::filter(op != "~1") %>%
+                       dplyr::filter(op != "|") %>%
+                       dplyr::group_by(lhs, op) %>%
+                       mutate(rhs=case_when(ustart==0 ~paste0(ustart,"*",rhs),
+                                            ustart!=0 ~ rhs)) %>%
+                       dplyr::summarise(rhs = paste(rhs, collapse = " + ")) %>%
+                       dplyr::arrange(dplyr::desc(op)) %>%
+                       tidyr::unite("l", lhs, op, rhs, sep = " ") %>%
+                       dplyr::pull(l))
+
+}
+
+
+#There is no build in function for the LKJ distribution
+#Manually write out LKJ distribution (taken trialr package, maintained by Kristian Brock)
+rlkjcorr <- function (n, K, eta = 1) {
+  stopifnot(is.numeric(K), K >= 2, K == as.integer(K))
+  stopifnot(eta > 0)
+  #if (K == 1) return(matrix(1, 1, 1))
+
+  f <- function() {
+    alpha <- eta + (K - 2)/2
+    r12 <- 2 * rbeta(1, alpha, alpha) - 1
+    R <- matrix(0, K, K) # upper triangular Cholesky factor until return()
+    R[1,1] <- 1
+    R[1,2] <- r12
+    R[2,2] <- sqrt(1 - r12^2)
+    if(K > 2) for (m in 2:(K - 1)) {
+      alpha <- alpha - 0.5
+      y <- rbeta(1, m / 2, alpha)
+
+      # Draw uniformally on a hypersphere
+      z <- rnorm(m, 0, 1)
+      z <- z / sqrt(crossprod(z)[1])
+
+      R[1:m,m+1] <- sqrt(y) * z
+      R[m+1,m+1] <- sqrt(1 - y)
+    }
+    return(crossprod(R))
+  }
+  R <- replicate( n , f() )
+  if ( dim(R)[3]==1 ) {
+    R <- R[,,1]
+  } else {
+    # need to move 3rd dimension to front, so conforms to array structure that Stan uses
+    R <- aperm(R,c(3,1,2))
+  }
+  return(R)
+}
+
+#Creates discrepancy matrices
+#generates misspecified data
+#fits original model to misspecified data
+#collates fit indices into a data frame
+miss_fit <- function(model,data,n,reps,estimator,MAD,scale){
+
+  #strip estimates from model statement
+  mod <- cleanmodel_DDFI(model)
+
+  # if categorical is True, remove thresholds from model statement as well
+  if((scale %in% c("categorical"))) {
+    model<-modelWithNum(model)
+  }
+
+  #count the number of factors in the model (needed to get dimension of matrix only for observed variables)
+  factors <- lavaan::lavaanify(model, fixed.x=FALSE) %>%
+    dplyr::filter(lhs != rhs)%>%
+    dplyr::filter(op=="=~") %>%
+    dplyr::select(lhs) %>%
+    base::unique()
+
+  #simulate model-implied (polychoric) correlation matrix for observed variables
+  dat <- simstandard::sim_standardized_matrices(model)
+  x<-dat$Correlations$R
+  l<-nrow(x)-nrow(factors)
+  a<-x[1:l,1:l]
+  a<-a[order(rownames(a)),order(colnames(a))]
+
+  r<-reps
+  n <- base::min(n,5000)
+
+  #create lists to house simulated, misspecified data
+
+  all_data_misspec<-vector(mode="list",length=length(MAD))
+  all_Q<-vector(mode="list",length=length(MAD))
+
+  #if scale="normal", simulate everything from multivariate normal, no need for original data
+  if (scale %in% c("normal")){
+
+    set.seed(97)
+    mu=rep(0,l)
+    all_data_misspec<-vector(mode="list",length=length(MAD))
+    all_Q<-vector(mode="list",length=length(MAD))
+
+    #create discrepancy matrices and create misspecified data
+    for (m in 1:length(MAD)) {
+      M<-vector(mode="list",length=r)
+      L<-vector(mode="list",length=r)
+      D<-vector(mode="list",length=r)
+      Q<-vector(mode="list",length=r)
+
+      #select MAD from list
+      mad<-MAD[m]
+      #find row from LKJ grid that most closely match desired MAD
+      row<-lkj[lkj$dim==l,]
+      #select eta value to use for LKJ distribution
+      eta<-as.numeric(row[which.min(abs(row$mean - mad)),]$eta)
+
+      for(i in 1:r)
+      {
+
+        #root of discrepancy matrix plus root of model-implied matrix (avoids possible non-positive definite issues)
+        M[[i]] <- chol(a)+chol(rlkjcorr(1,l,eta=eta))-diag(l)
+        #full data generation correlation matrix (includes misspecifications)
+        L[[i]] <- cov2cor(t(M[[i]])%*%M[[i]])
+        #simulate data from full matrix
+        D[[i]]<-as.data.frame(mvrnorm(n=n, mu=mu, Sigma=L[[i]]))
+        #record replication number
+        D[[i]]$rep <-i
+        #track discrepancy of each element (optional part of output)
+        Q[[i]]<-a-L[[i]]
+      }
+      #rename objects with suffix for misspecification level
+      all_data_misspec[[m]]<-D
+      assign(paste0("m",m),M)
+      assign(paste0("l",m),L)
+      assign(paste0("data_mis",m),D)
+
+      #save all individual discrepancies (for optional output)
+      all_Q[[m]]<-Q
+    }
+  }
+
+  #if scale="nonnormal", used Fleishman method using original data to get skew and kurtosis
+  if (scale %in% c("nonnormal")){
+
+    unique<-lengths(lapply(data[,colnames(a)], unique))
+    #flag any variable with between 2 and 7 categories are categorical/Likert
+    probLik <- (1< unique & unique <10)
+    probLik1 <- t(as.data.frame(unique[probLik]))
+    #save names of likely categorical/likert variables (to be transformed later)
+    likertnames<-colnames(probLik1)
+
+    #create empty matrix for proportions in each category,g
+    g<-list()
+    #data only with discrete items
+    data1<-data[,likertnames]
+
+    #rescale so that minimum value is always ==1
+    #needed to properly index computations below
+    #will be scaled back at the end after loop indexes are not longer needed
+    d2<-matrix(sapply(data1, function(x) min(x, na.rm=T)-1), nrow=1, ncol=ncol(data1))
+    d3<-matrix(rep(d2,each=nrow(data1)), nrow=nrow(data1), ncol=ncol(data1))
+    d3l<-matrix(rep(d2,each=(r*nrow(data1))), nrow=(r*nrow(data1)), ncol=ncol(data1))
+    colnames(d3)<-colnames(data1)
+    colnames(d3l)<-colnames(data1)
+    data1<-data1-d3
+
+    #loop through all discrete variables in fitted model
+    for (i in 1:length(likertnames)){
+      #setup list element of all 0s, to be replaced
+      g1<-rep(0,max(data1[,i], na.rm=T)-1)
+      g[[i]]<-g1
+      #loop through all categories for each varaible
+      for (h in (min(data1[,i], na.rm=T)-1):(max(data1[,i], na.rm=T))){
+        #proportion of responses at or below each category, only count non-missing in the denominator
+        g[[i]][h+1]<-sum(table(data1[,i])[names(table(data1[,i]))<=h])/sum(!is.na(data1[,i]))
+      }
+    }
+
+
+    #calculate EM mean/cov?
+    dummymod<-sem(mod,meanstructure=T,data=data[,colnames(a)],missing="ML",do.fit=F)
+    #em<-lavInspect(dummymod,what="sampstat")
+    em<-lavInspect(dummymod,what="sampstat")
+    mu<-em$mean[colnames(a)]
+    x<-chol(em$cov[colnames(a),colnames(a)])
+    xx<-t(x)%*%x
+    xxx<-xx[colnames(a),colnames(a)]
+    S.inv.sqrt <- solve(chol(xxx))
+    ##data for transforming
+    ddd<-as.matrix(data[,colnames(a)])
+    d<-ddd
+    #missing data patterns
+    na<-is.na(data[,colnames(a)])
+    #groups of missing data
+    nagrp<-unique(na)
+
+    for (m in 1:length(MAD)) {
+      M<-vector(mode="list",length=r)
+      L<-vector(mode="list",length=r)
+      D<-vector(mode="list",length=r)
+      Q<-vector(mode="list",length=r)
+      #select MAD from list
+      mad<-MAD[m]
+      #find row from LKJ grid that most closely match desired MAD
+      row<-lkj[lkj$dim==l,]
+      #select eta value to use for LKJ distribution
+      eta<-as.numeric(row[which.min(abs(row$mean - mad)),]$eta)
+
+      for(i in 1:r){
+
+        ll<-list()
+        gg<-vector()
+
+        #root of discrepancy matrix plus root of model-implied matrix (avoids possible non-positive definite issues)
+        M[[i]] <- chol(a)+chol(rlkjcorr(1,l,eta=eta))-diag(l)
+        #full data generation correlation matrix (includes misspecifications)
+        L[[i]] <- cov2cor(t(M[[i]])%*%M[[i]])
+        #BS-bootstrap transformation
+        sigma.sqrt <- chol(L[[i]])
+
+        for (e in 1:nrow(nagrp)){
+          for (f in 1:nrow(data)) {
+            gg[f] <- all(na[f,]==nagrp[e,])
+          }
+          ll[[e]]<-gg
+          dataz<-matrix(ddd[ll[[e]],nagrp[e,]==F],nrow=sum(ll[[e]]==T),ncol=length(names(nagrp[e,nagrp[e,]==F])))
+          colnames(dataz)<-names(nagrp[e,nagrp[e,]==F])
+
+          zz<-matrix(1,nrow(dataz),1)%*%matrix(1,1,ncol(dataz))+(dataz-matrix(1,nrow(dataz),1)%*%t(mu[colnames(dataz)]))%*%S.inv.sqrt[colnames(dataz),colnames(dataz)]%*%sigma.sqrt[colnames(dataz),colnames(dataz)]
+
+          d[ll[[e]],nagrp[e,]==F]<-zz
+        }
+
+        #add d3 back to put categorical items onto original scale
+        d[,likertnames]<- d[,likertnames]+d3[,likertnames]
+        #save data
+        D[[i]]<-as.data.frame(d)
+        D[[i]]$rep<-i
+
+        #track discrepancy of each element (optional part of output)
+        Q[[i]]<-a-L[[i]]
+      }
+
+      #rename objects with suffix for misspecification level
+      all_data_misspec[[m]]<-D
+      assign(paste0("m",m),M)
+      assign(paste0("l",m),L)
+      assign(paste0("data_mis",m),D)
+
+      #save all individual discrepancies (for optional output)
+      all_Q[[m]]<-Q
+    }
+  }
+
+    #if scale="categorical", use data to figure out which variables are discrete and what proportions should be
+  if (scale %in% c("categorical")){
+
+    mu=rep(0,l)
+    set.seed(97)
+    all_data_misspec<-vector(mode="list",length=length(MAD))
+    all_Q<-vector(mode="list",length=length(MAD))
+
+    for (m in 1:length(MAD)) {
+      M<-vector(mode="list",length=r)
+      L<-vector(mode="list",length=r)
+      D<-vector(mode="list",length=r)
+      Q<-vector(mode="list",length=r)
+
+      #select MAD from list
+      mad<-MAD[m]
+      #find row from LKJ grid that most closely match desired MAD
+      row<-lkj[lkj$dim==l,]
+      #select eta value to use for LKJ distribution
+      eta<-as.numeric(row[which.min(abs(row$mean - mad)),]$eta)
+
+      for(i in 1:r){
+
+        #root of discrepancy matrix plus root of model-implied matrix (avoids possible non-positive definite issues)
+        M[[i]] <- chol(a)+chol(rlkjcorr(1,l,eta=eta))-diag(l)
+        #full data generation correlation matrix (includes misspecifications)
+        L[[i]] <- cov2cor(t(M[[i]])%*%M[[i]])
+        #simulate data from full matrix
+        D[[i]]<-as.data.frame(mvrnorm(n=n, mu=mu, Sigma=L[[i]]))
+        #record replication number
+        D[[i]]$rep <-i
+        #track discrepancy of each element (optional part of output)
+        Q[[i]]<-a-L[[i]]
+      }
+
+      #rename objects with suffix for misspecification level
+      all_data_misspec[[m]]<-D
+      assign(paste0("m",m),M)
+      assign(paste0("l",m),L)
+      assign(paste0("data_mis",m),D)
+
+      #save all individual discrepancies (for optional output)
+      all_Q[[m]]<-Q
+    }
+
+    #number of columns, including rep counter
+    last<-ncol(as.data.frame(all_data_misspec[[1]][[1]]))
+    #get names of all variables in the model
+    names<-colnames(a)
+    #count number of unique values per variable
+    unique<-lengths(lapply(data[,names], unique))
+    #flag any variable with between 2 and 7 categories are categorical/Likert
+    probLik <- (1< unique & unique <10)
+    probLik1 <- t(as.data.frame(unique[probLik]))
+    #save names of likely categorical/likert variables (to be transformed later)
+    likertnames<-colnames(probLik1)
+
+    #number of continuous variables
+    n_cont<-ncol(a)-length(likertnames)
+    #names of continuous variables
+    contnames<-setdiff(rownames(a),likertnames)
+
+    #create empty matrix for proportions in each category,g
+    g<-list()
+    #data only with discrete items
+    data1<-data[,likertnames]
+
+    #rescale so that minimum value is always ==1
+    #needed to properly index computations below
+    #also needed to avoid 0s because there is multiplication involved
+    #will be scaled back at the end after loop indexes are not longer needed
+    d2<-matrix(sapply(data1, function(x) min(x, na.rm=T)-1), nrow=1, ncol=ncol(data1))
+    d3<-matrix(rep(d2,each=nrow(data1)), nrow=nrow(data1), ncol=ncol(data1))
+    colnames(d3)<-colnames(data1)
+    data1<-data1-d3
+
+    #create empty matrix for proportions in each category (g) and pseudo-threshold corresponding to that proportion (p)
+    g<-matrix(nrow=(max(data1,na.rm=T)-min(data1, na.rm=T)), ncol=ncol(data1))
+    p<-g
+
+    #loop through all variables in fitted model
+    for (i in 1:ncol(data1)){
+      #loop through all categories for each variable
+      for (h in min(data1[,i],na.rm=T):(max(data1[,i],na.rm=T)-1)){
+        #proportion of responses at or below each category, only count non-missing in the denominator
+        g[h,i]<-sum(table(data1[,i])[names(table(data1[,i]))<=h])/sum(!is.na(data1[,i]))
+        #inverse standard normal to determine pseudo-thresholds
+        p[h,i]<-qnorm(c(g[h,i]))
+        dp<-as.data.frame(p)
+      }
+    }
+    #Assign column names so it's clear which thresholds go with which variable
+    colnames(dp)<-colnames(data1)
+    a2<-colnames(dp)
+
+    #loop through MAD values
+    for (x in 1:length(MAD))
+    {
+      #loop through replications
+      for (xx in 1:r)
+      {
+        #loop through pseduo-thresholds
+        for (i in 1:ncol(dp))
+        {# first loop transforms highest category (important for binary variables)
+          u<- as.numeric(sum(!is.na(dp[,i])))
+          all_data_misspec[[x]][[xx]]<-all_data_misspec[[x]][[xx]] %>%
+            dplyr::mutate(!!a2[i] := case_when(
+              !!rlang::sym(a2[i])  <= dp[1,i] ~100,
+              !!rlang::sym(a2[i]) >   dp[u,i] ~100*(u+1),
+              TRUE ~ !!rlang::sym(a2[i]))
+            )
+          #second loop transforms all lower categories (for any ordinal/Likert variables)
+          if(sum(!is.na(dp[,i])) > 1){
+            for (j in 1:sum(!is.na(dp[,i]))) {
+              all_data_misspec[[x]][[xx]]<-all_data_misspec[[x]][[xx]] %>%
+                dplyr::mutate(!!a2[i] := case_when(
+                  between( !!rlang::sym(a2[i]) , dp[j,i], dp[j+1,i]) ~ as.numeric(100*(j+1)),
+                  TRUE~ !!rlang::sym(a2[i]))
+                )
+            }
+          }
+        }
+
+        #loops multiply by 100 to avoid overwriting MVN data with values above 1
+        #divide by 100 to put things back onto original metric
+        #add d3 back to put simulated data back onto original scale (lowest values does not have to be 1)
+        all_data_misspec[[x]][[xx]][,likertnames] <-(all_data_misspec[[x]][[xx]][,likertnames]/100) + d3[,likertnames]
+
+        #mimic missing data pattern from original data
+        #first, remove replication counter from last column
+        temp_na<-all_data_misspec[[x]][[xx]][,-last]
+        #identify which cells of original data matrix are missing
+        temp_na[is.na(data[names])]<-NA
+        #replace simulated values with NA if original is missing
+        all_data_misspec[[x]][[xx]]<-temp_na
+        #restore replication counter
+        all_data_misspec[[x]][[xx]]$rep<-xx
+      }
+    }
+  }
+
+  #use "estimator =" option to figure out which corrected/scaled fit index is needed
+  # also skip calculating SEs to speed up simulations, if estimator allows for it
+
+  se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
+  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+    ind<-c("rmsea.ci.upper.scaled","rmsea.scaled","cfi.scaled")
+  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+    ind<-c("rmsea.ci.upper.robust","rmsea.robust","cfi.robust")
+  }  else {
+    ind<-c("rmsea.ci.upper","rmsea","cfi")
+  }
+
+  if((estimator=="ML" | estimator=="MLR") & scale %in% "nonnormal"){
+    missing<-"ML"
+  } else {
+    missing<-"listwise"
+  }
+
+  #fit model to all simulated datasets
+  #if categorical = T, treats categorical variables in "likertnames" as ordered categorical variables
+  if(scale %in% c("categorical")){
+    misspec_cfa <- purrr::map(all_data_misspec, function(x) purrr::map(x, function(y) lavaan::cfa(model = mod, data=y, estimator=estimator,std.lv=TRUE,se=se, ordered = likertnames, check.gradient=FALSE,
+                                                                                                  check.post=FALSE,
+                                                                                                  check.vcov=FALSE,
+                                                                                                  control=list(rel.tol=.001))))
+  }
+
+  #if categorical ==F, then just treat all variables as continuous
+  if(!(scale %in% c("categorical"))){
+    misspec_cfa <- purrr::map(all_data_misspec, function(x) purrr::map(x, function(y) lavaan::cfa(model = mod, data=y, estimator=estimator,std.lv=TRUE,se=se,check.gradient=FALSE,
+                                                                                                  check.post=FALSE,
+                                                                                                  check.vcov=FALSE,
+                                                                                                  control=list(rel.tol=.001))))
+  }
+
+  #Extract fit stats from each rep into a data frame
+  misspec_fit_sum <- purrr::map(misspec_cfa, function(x) purrr::map_dfr(x, function(y) lavaan::fitMeasures(y, ind)) %>%
+                                  `colnames<-`(c("RMSEA_CI_UPPER_M","RMSEA_M","CFI_M")) %>%
+                                  dplyr::mutate(Type_M="Misspecified"))
+
+  #reset the seed
+  set.seed(NULL)
+
+  #create list for different outcomes
+  miss<-list()
+
+  #object with fit index values
+  miss$misspec_fit_sum<-misspec_fit_sum
+  #object with discrepancies tested
+  miss$all_Q<-all_Q
+  #object with all simulated data
+  miss$Data<-all_data_misspec
+
+  return(miss)
+}
+
+#generate data consistent with the original model
+#fit orginal model to correct/consistent data
+#collated fit indices into a data frame
+
+true_fit<- function(model,data,n,reps, estimator, MAD,scale){
+
+  #strip estimates from model statement
+  mod <- cleanmodel_DDFI(model)
+
+  # if categorical==T, remove thresholds from model statement as well
+  if(scale %in% c("categorical")) {
+    model<-modelWithNum(model)
+  }
+  #count the number of factors in the model (needed to get dimension of matrix only for observed variables)
+  factors <- lavaan::lavaanify(model, fixed.x=FALSE) %>%
+    dplyr::filter(lhs != rhs)%>%
+    dplyr::filter(op=="=~") %>%
+    dplyr::select(lhs) %>%
+    base::unique()
+
+  #simulate model-implied (polychoric) correlation matrix for observed variables
+  dat <- simstandard::sim_standardized_matrices(model)
+  x<-dat$Correlations$R
+  l<-nrow(x)-nrow(factors)
+  a<-x[1:l,1:l]
+  a<-a[order(rownames(a)),order(colnames(a))]
+  diag(a)=1
+
+  r<-reps
+
+  #Use max sample size of 5000
+  n <- base::min(n,5000)
+
+  #Set seed
+  set.seed(649364)
+
+  #if scale="normal", simulate everything from multivariate normal, no need for original data
+  if (scale %in% c("normal")){
+
+    #set mean vector to 0
+    mu=rep(0,l)
+
+    #create list to house simulated data
+    data_t<-list()
+
+    #simulate data that are consistent with the original model's implied correlation matrix
+    for(i in 1:r)
+    {
+      data_t[[i]]<-as.data.frame(mvrnorm(n=n, mu=mu, Sigma=a))
+      data_t[[i]]$rep<-i
+    }
+
+  }
+
+  if (scale %in% c("nonnormal")){
+
+    unique<-lengths(lapply(data[,colnames(a)], unique))
+    #flag any variable with between 2 and 7 categories are categorical/Likert
+    probLik <- (1< unique & unique <10)
+    probLik1 <- t(as.data.frame(unique[probLik]))
+    #save names of likely categorical/likert variables (to be transformed later)
+    likertnames<-colnames(probLik1)
+
+    #create empty matrix for proportions in each category,g
+    g<-list()
+    #data only with discrete items
+    data1<-data[,likertnames]
+
+    #rescale so that minimum value is always ==1
+    #needed to properly index computations below
+    #will be scaled back at the end after loop indexes are not longer needed
+    d2<-matrix(sapply(data1, function(x) min(x, na.rm=T)-1), nrow=1, ncol=ncol(data1))
+    d3<-matrix(rep(d2,each=nrow(data1)), nrow=nrow(data1), ncol=ncol(data1))
+    d3l<-matrix(rep(d2,each=(r*nrow(data1))), nrow=(r*nrow(data1)), ncol=ncol(data1))
+    colnames(d3)<-colnames(data1)
+    colnames(d3l)<-colnames(data1)
+    data1<-data1-d3
+
+    #loop through all discrete variables in fitted model
+    for (i in 1:length(likertnames)){
+      #setup list element of all 0s, to be replaced
+      g1<-rep(0,max(data1[,i], na.rm=T)-1)
+      g[[i]]<-g1
+      #loop through all categories for each varaible
+      for (h in (min(data1[,i], na.rm=T)-1):(max(data1[,i], na.rm=T))){
+        #proportion of responses at or below each category, only count non-missing in the denominator
+        g[[i]][h+1]<-sum(table(data1[,i])[names(table(data1[,i]))<=h])/sum(!is.na(data1[,i]))
+      }
+    }
+
+    dummymod<-sem(mod,meanstructure=T,data=data[,colnames(a)],missing="ML",do.fit=F)
+    em<-lavInspect(dummymod,what="sampstat")
+    mu<-em$mean[colnames(a)]
+    data1<-data[,colnames(a)]
+
+    data_t<-semTools::bsBootMiss(Sigma =a, Mu=mu, rawData = data1, nBoot=reps,bootSamplesOnly  = TRUE)
+  }
+
+  if (scale %in% c("categorical")){
+    #Set seed
+    set.seed(649364)
+    #set mean vector to 0
+    mu=rep(0,l)
+    #create list to house simulated data
+    data_t<-list()
+
+    #simulate data that are consistent with the original model's implied correlation matrix
+    for(i in 1:r)
+    {
+      data_t[[i]]<-as.data.frame(mvrnorm(n=n, mu=mu, Sigma=a))
+      data_t[[i]]$rep<-i
+    }
+
+    #number of columns, including rep counter
+    last<-ncol(as.data.frame(data_t[[1]]))
+    #get names of all variables in the model
+    names<-colnames(a)
+    #count number of unique values per variable
+    unique<-lengths(lapply(data[,colnames(a)], unique))
+    #flag any variable with between 2 and 7 categories are categorical/Likert
+    probLik <- (1< unique & unique <10)
+    probLik1 <- t(as.data.frame(unique[probLik]))
+    #save names of likely categorical/likert variables (to be transformed later)
+    likertnames<-colnames(probLik1)
+
+    #number of continuous variables
+    n_cont<-ncol(a)-length(likertnames)
+    #names of continuous variables
+    contnames<-setdiff(rownames(a),likertnames)
+
+    #create empty matrix for proportions in each category,g
+    g<-list()
+    #data only with discrete items
+    data1<-data[,likertnames]
+
+    #rescale so that minimum value is always ==1
+    #needed to properly index computations below
+    #also needed to avoid 0s because there is multiplication involved
+    #will be scaled back at the end after loop indexes are not longer needed
+    d2<-matrix(sapply(data1, function(x) min(x, na.rm=T)-1), nrow=1, ncol=ncol(data1))
+    d3<-matrix(rep(d2,each=nrow(data1)), nrow=nrow(data1), ncol=ncol(data1))
+    colnames(d3)<-colnames(data1)
+    data1<-data1-d3
+
+    #create empty matrix for proportions in each category (g) and pseudo-threshold corresponding to that proportion (p)
+    g<-matrix(nrow=(max(data1,na.rm=T)-min(data1, na.rm=T)), ncol=ncol(data1))
+    p<-g
+
+    #loop through all variables in fitted model
+    for (i in 1:ncol(data1)){
+      #loop through all categories for each varaible
+      for (h in min(data1[,i], na.rm=T):(max(data1[,i], na.rm=T)-1)){
+        #proportion of responses at or below each category, only count non-missing in the denominator
+        g[h,i]<-sum(table(data1[,i])[names(table(data1[,i]))<=h])/sum(!is.na(data1[,i]))
+        #inverse standard normal to determine pseudo-thresholds
+        p[h,i]<-qnorm(c(g[h,i]))
+        dp<-as.data.frame(p)
+      }
+    }
+    #inverse standard normal to determine pseudo-thresholds
+    colnames(dp)<-colnames(data1)
+    a2<-colnames(dp)
+
+    #loop through replications
+    for (xx in 1:r)
+    {
+      #loop through pseduo-thresholds
+      for (i in 1:ncol(dp))
+      {# first loop transforms highest category (important distinction for binary variables)
+        u<- as.numeric(sum(!is.na(dp[,i])))
+        data_t[[xx]]<-data_t[[xx]] %>%
+          dplyr::mutate(!!a2[i] := case_when(
+            !!rlang::sym(a2[i])  <= dp[1,i] ~100,
+            !!rlang::sym(a2[i]) >   dp[u,i] ~100*(u+1),
+            TRUE ~ !!rlang::sym(a2[i]))
+          )
+        #second loop transforms all lower categories
+        if(sum(!is.na(dp[,i])) > 1){
+          for (j in 1:sum(!is.na(dp[,i]))) {
+            data_t[[xx]]<-data_t[[xx]] %>%
+              dplyr::mutate(!!a2[i] := case_when(
+                between( !!rlang::sym(a2[i]) , dp[j,i], dp[j+1,i]) ~ as.numeric(100*(j+1)),
+                TRUE~ !!rlang::sym(a2[i]))
+              )
+          }
+        }
+      }
+
+      #loops multiply by 100 to avoid overwriting MVN data with values above 1
+      #divide by 100 to put things back onto original metric
+      #add d3 back to put simulated data back onto original scale (lowest values does not have to be 1)
+      data_t[[xx]][,likertnames] <-(data_t[[xx]][,likertnames]/100) + d3[,likertnames]
+
+      #######
+      #mimic missing data pattern from original data
+      ########
+
+      #first, remove replication counter from last column
+      #mimic missing data pattern from original data
+      temp_na<-data_t[[xx]][,-last]
+      #identify which cells of original data matrix are missing
+      temp_na[is.na(data[names])]<-NA
+      #replace simulated values with NA if original is missing
+      data_t[[xx]]<-temp_na
+      #restore replication counter
+      data_t[[xx]]$rep<-xx
+    }
+  }
+
+  # use "estimator=" option to determine which type of fit index to track (standard, normal, scaled)
+  # also skip calculating SEs to speed up simulations, if estimator allows for it
+  se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
+  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+    ind<-c("rmsea.ci.upper.scaled","rmsea.scaled","cfi.scaled")
+  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+    ind<-c("rmsea.ci.upper.robust","rmsea.robust","cfi.robust")
+  }  else {
+    ind<-c("rmsea.ci.upper","rmsea","cfi")
+  }
+
+  if((estimator=="ML" | estimator=="MLR") & scale %in% "nonnormal"){
+    missing<-"ML"
+  } else {
+    missing<-"listwise"
+  }
+
+  #fit model to all simulated datasets
+  #if categorical = T, treats categorical variables in "likertnames" as ordered categorical variables
+  if(scale %in% c("categorical")){
+    true_cfa <- purrr::map(data_t, function(x) lavaan::cfa(model = mod, data=x, std.lv=TRUE, ordered=likertnames,estimator=estimator,se=se, check.gradient=FALSE,
+                                                           check.post=FALSE,
+                                                           check.vcov=FALSE,
+                                                           control=list(rel.tol=.001)))
+  }
+
+  #if categorical ==F, then just treat all variables as continuous
+  if(!(scale %in% c("categorical"))){
+    true_cfa <- purrr::map(data_t, function(x) lavaan::cfa(model = mod, data=x, std.lv=TRUE,estimator=estimator,se=se,check.gradient=FALSE,
+                                                           check.post=FALSE,
+                                                           check.vcov=FALSE,
+                                                           control=list(rel.tol=.001)))
+  }
+
+
+  #Extract fit stats from each rep into a data frame
+  true_fit_sum <- purrr::map_dfr(true_cfa,~lavaan::fitMeasures(., ind)) %>%
+    `colnames<-`(c("RMSEA_CI_UPPER_T","RMSEA_T","CFI_T")) %>%
+    dplyr::mutate(Type_T="True")
+
+  set.seed(NULL)
+
+  #create list for different outcomes
+  true<-list()
+
+  #object with fit index values
+  true$true_fit_sum<-true_fit_sum
+  #objects with discrepancies tested
+  true$all_D<-data_t
+
+  return(true)
+}
+
+#Function to combine all indices into one dataframe
+#Will used to created distributions that determine optimal cutoff
+combined <- function(model,data,n,reps,estimator,MAD,scale){
+
+  #Use max sample size of 5000
+  n <- min(n,5000)
+
+  #apply function for simulated misspecified data
+  misspec_fit <- miss_fit(model,data,n,reps,estimator,MAD,scale)
+
+  #apply function for simulatied correct data
+  true_fit <- true_fit(model,data,n,reps,estimator,MAD,scale)
+
+  #Produce final table by level
+  Table <- purrr::map(misspec_fit$misspec_fit_sum,~cbind(.,true_fit$true_fit_sum))
+
+  #set up list of outcomes
+  out<-list()
+
+  #Table of fit indices
+  out$Table<-Table
+  #Table of discrepancies
+  out$Q<-misspec_fit$all_Q
+  #table of true generated data (for plotting distributions)
+  out$D<-true_fit$all_D
+  #table of individual simulated data (for plotting distributions)
+  out$Data<-list(true_fit$all_D,misspec_fit$Data)
+
+  return(out)
+}
