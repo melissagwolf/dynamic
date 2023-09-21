@@ -59,28 +59,23 @@ if (scale=="categorical" & is.null(estimator)){
   estimator="WLSMV"
 }
 
+if (scale %in% c("nonnormal", "categorical") & is.null(data)){
+    stop("dynamic error: A dataset is required for scale='nonnormal' or scale='categorical'
+
+         If you do not have a dataset, scale='normal' may be used without a dataset.
+
+         Without a dataset, cutoffs may be affected by missing data and deviations from normality.")
+  }
+
 if ( !(scale%in% c("normal", "nonnormal", "categorical"))){
-  stop("dynamic Error: The scale of the observed variables must be 'normal','nonnormal', 'likert', or 'categorical'")}
+  stop("dynamic Error:  scale must be one of 'normal','nonnormal', or 'categorical'")}
 
-if (scale %in% "nonnormal"){
-  warning("dynamic Warning:
+if(plot.dist & is.null(data)){
+    stop("dynamic Error: Plots comparing generated data to the original data require a dataset to be provided.
 
-            Computational times are longer for scale='nonnormal' due to missing data and procedures to generate non-normal data.
-
-            This may take a few minutes.
-
-            (e.g., 20 variables with N=1000 averages ~5-10 min, depending on the processor speed).", immediate.=T)
-}
-
-if (scale %in% "categorical"){
-  warning("dynamic Warning:
-
-            Computational times are longer for scale='categorical' due increased demand for categorical models.
-
-            This may take a few minutes.
-
-            (e.g., 20 variables with N=1000 averages ~5-10 min, depending on the processor speed).", immediate.=T)
-}
+           Please provide a original data with the 'data=' option or set the 'plot.dist=' option to FALSE
+           ")
+  }
 
 #If model statement is manually entered,
 if(manual){
@@ -93,27 +88,28 @@ if(manual){
              }
            })
 
-  n <- n
-  model9 <- model
+  #error for forgetting to include a sample size with manual=T & scale=Normal
+  if (scale=="normal" & is.null(n)){
+    stop("dynamic Error: A sample size is required in the n= option with manual = T and scale='normal'")
+  }
 
-  #error for forgetting to include a sample size with manual=T
-  tryCatch(defre(model9,n),
-           error=function(err4){
-             if (grepl("non-numeric matrix extent", err4)){
-               stop("dynamic Error: Did you forget to include a sample size with your manually entered model?")
-             }
-           })
+  if (!is.null(n)){
+    n <- n
+  }
+
+  if (scale %in% c("nonnormal", "categorical") & is.null(n)){
+    n <- nrow(data)
+  }
+  model9 <- model
 }
 
-#for model statment entered from a lavaan object,
+#for model statement entered from a lavaan object,
 if(!manual){
+
   #error for entering a model statement manually but forgetting to include manual=T
-  tryCatch(cfa_n(model),
-           error=function(err){
-             if (grepl("trying to get slot", err)) {
-               stop("dynamic Error: Did you forget to use manual=TRUE?")
-             }
-           })
+  if (is.character(model)){
+    stop("dynamic error: Did you forget to use manual=TRUE?")
+  }
 
   #Error for when someone enters an object that doesn't exist, or a non-lavaan object
   tryCatch(cfa_n(model),
@@ -143,6 +139,22 @@ if (unstandardized(model9)>0){
   stop("dynamic Error: One of your loadings or correlations has an absolute value of 1 or above (an inadmissible value). Please use standardized loadings. If all of your loadings are under 1, try looking for a missing decimal in your model statement or checking if you received a warning about non-positive definiteness.")
 }
 
+if (scale %in% "nonnormal"){
+    warning("dynamic Warning:
+
+            Computational times are longer for scale='nonnormal' due to missing data and procedures to generate non-normal data.
+
+            This may take a few minutes.", immediate.=T)
+  }
+
+if (scale %in% "categorical"){
+    warning("dynamic Warning:
+
+            Computational times are longer for scale='categorical' due increased demand for categorical models.
+
+            This may take a few minutes.", immediate.=T)
+  }
+
 #Create list to store outputs (table and plot)
 res <- list()
 
@@ -162,15 +174,6 @@ if(!manual){
   rownames(fitted_t) <- c("")
   res$fit <- fitted_t
 }
-
-tryCatch(combined(model9,data,n,estimator, reps, MAD, scale, categorical),
-         error=function(err3){
-           if (grepl("is missing, with no default", err3)){
-             stop("dynamic Error: Did you forget to include a dataset? 'scale' options other than 'normal' require a dataset to determine the number of categories/scale points.
-
-                    If you do not have a dataset, scale='normal' will simulate complete data for all variables from normal distributions (cutoffs may be affected by missing data and deviations from normality) ")
-           }
-         })
 
 #Run simulation
 W <- combined(model9,data,n,reps,estimator,MAD, scale)
@@ -409,13 +412,6 @@ if(plot.dfi){
 
   #Put into list
   res$plot.dfi <- plots
-}
-
-if(plot.dist & is.null(data)){
-  stop("dynamic Error: Plots comparing generated data to the original data require a dataset to be provided.
-
-           Please provide a original data with the 'data=' option or set the 'plot.dist=' option to FALSE
-           ")
 }
 
 if(plot.dist & !is.null(data)){
