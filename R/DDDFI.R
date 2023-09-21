@@ -544,6 +544,3 @@ print.DDDFI <- function(x,...){
   #Hides this function
   base::invisible()
 }
-
-devtools::load_all()
-lkj<-lkj.rda

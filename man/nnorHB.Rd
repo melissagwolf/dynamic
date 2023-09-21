@@ -19,7 +19,7 @@ nnorHB(
 }
 \arguments{
 \item{model}{This can either be a \code{\link{lavaan}} object from the \code{\link{cfa}} function,
-OR a model statement written in \code{\link{lavaan}} \code{\link{model.syntax}} with standardized loadings and thresholds.}
+OR a model statement written in \code{\link{lavaan}} \code{\link{model.syntax}} with standardized loadings.}
 
 \item{data}{An empirical dataset to which a modified Bollen-Stine bootstrap will be applied to create hypothetical misspecified data}
 
