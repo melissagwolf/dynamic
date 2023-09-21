@@ -8,6 +8,7 @@
 #' @import ggplot2
 #' @importFrom stats quantile qnorm
 #' @importFrom semTools bsBootMiss
+#' @importFrom MASS mvrnorm
 
 
 ############################################################################
