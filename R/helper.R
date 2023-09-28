@@ -3517,7 +3517,7 @@ miss_fit <- function(model,data,n,reps,estimator,MAD,scale){
   a<-a[order(rownames(a)),order(colnames(a))]
 
   r<-reps
-  n <- base::min(n,5000)
+  n <- n
 
   #create lists to house simulated, misspecified data
 
@@ -3912,7 +3912,7 @@ true_fit<- function(model,data,n,reps, estimator, MAD,scale){
   r<-reps
 
   #Use max sample size of 5000
-  n <- base::min(n,5000)
+  n <-n
 
   #Set seed
   set.seed(649364)
@@ -4148,7 +4148,7 @@ true_fit<- function(model,data,n,reps, estimator, MAD,scale){
 combined <- function(model,data,n,reps,estimator,MAD,scale){
 
   #Use max sample size of 5000
-  n <- min(n,5000)
+  n <- n
 
   #apply function for simulated misspecified data
   misspec_fit <- miss_fit(model,data,n,reps,estimator,MAD,scale)
