@@ -45,7 +45,39 @@
 #' @return Direct Discrepancy Dynamic fit index (DFI) cutoffs for CFI, RMSEA, and RMSEA 90% CI.
 #' @export
 #'
-
+#'#' @examples
+#' #Example using a lavaan object as input (manual=FALSE)
+#'
+#' lavmod <- "F1 =~ x1 + x2 + x3
+#'            F2 =~ x4 + x5 + x6
+#'            F3 =~ x7 + x8 + x9"
+#'
+#' fit <- lavaan::cfa(lavmod,data=Holzinger)
+#' \donttest{DDDFI(fit)}
+#'
+#' #Manual entry example (manual=TRUE)
+#'
+#' #Holzinger 3-factor model
+#' lavmod <- "F1 =~ x1 + x2 + x3
+#'            F2 =~ x4 + x5 + x6
+#'            F3 =~ x7 + x8 + x9"
+#'
+#'  #fit the model,lavaan is used here to shown where estimates come from
+#'  #but manual entry supports standardized estimates from models fit in any software
+#'
+#'  fit<-lavaan::cfa(lavmod, data=Holzinger)
+#'  lavaan::standardizedsolution(fit)
+#'
+#'  #model statement with standardized estimates
+#'  manual_model <- "F1 =~ .772*x1 + .424*x2 + .581*x3
+#'             F2 =~ .852*x4 + .855*x5 + .838*x6
+#'             F3 =~ .570*x7 + .723*x8 + .665*x9
+#'             F1~~.459*F2
+#'             F1~~.471*F3
+#'             F2~~.283*F3"
+#'
+#' \donttest{DDDFI(model=manual_model,n=301,manual=TRUE)}
+#'
 
 DDDFI <- function(model,data=NULL, scale="normal", manual=FALSE,reps=250, n=NULL, estimator=NULL, MAD=c(.038, .05,.06), plot.dfi=FALSE, plot.dist=FALSE, plot.discrepancy=FALSE){
 if (scale=="normal" & is.null(estimator)){

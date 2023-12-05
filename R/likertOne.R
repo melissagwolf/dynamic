@@ -34,7 +34,34 @@
 #'
 #' @return Dynamic fit index (DFI) cutoffs for SRMR, RMSEA, and CFI.
 #' @export
-
+#'
+#' @examples
+#' #Example using a lavaan object as input (manual=FALSE)
+#'
+#' #one-factor model
+#' m1<-"F1=~X5+ X6 + X7 + X8 + X9"
+#'
+#'  #fit the model in lavaan, treating items are continuous
+#'  fit<-lavaan::cfa(m1, data=Example)
+#'
+#' \donttest{likertOne(fit, data=Example)}
+#'
+#' #Manual entry example (manual=TRUE)
+#'
+#' #one-factor model with correlated factors
+#' m1<-"F1=~X5+ X6 + X7 + X8 + X9"
+#'
+#'  #fit the model, treating items are continuous
+#'  #lavaan is used here to shown where estimates come from
+#'  #but manual entry supports standardized estimates from models fit in any software
+#'
+#'  fit<-lavaan::cfa(m1, data=Example)
+#'  lavaan::standardizedsolution(fit)
+#'
+#' manual_model <-"F1=~.517*X5 + .549*X6 + .679*X7 + .694*X8 + .203*X9"
+#'
+#' \donttest{likertOne(model=manual_model,data=Example,n=500,manual=TRUE)}
+#'
 
 likertOne <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=250){
 

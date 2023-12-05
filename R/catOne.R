@@ -32,64 +32,62 @@
 #' @export
 #'
 #' @examples
-#' #Lavaan object example (manual=FALSE)
-#' dat <- lavaan::HolzingerSwineford1939
-#' lavmod <- "F1 =~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9"
-#' fit <- lavaan::cfa(lavmod,dat)
-#' \donttest{cfaOne(fit)}
+#' #Example using a lavaan object as input (manual=FALSE)
 #'
-#' #Manual entry example for a sample size of 6649 (manual=TRUE)
-#' #thresholds go in model statement as (a)categorical item name, (b) vertical pipe, (c) estimate, (d)times t+threshold number
-#' manmod <- "E =~ .76*bfi_e1 + .73*bfi_e2 + .59*bfi_e3 + .71*bfi_e4 + .84*bfi_e5 + .58*bfi_e6 + .71*bfi_e7 + .80*bfi_e8
+#' #one-factor model
+#' m1<-"F1=~X5+ X6 + X7 + X8 + X9"
 #'
-#'bfi_e1 |-1.69*t1
-#'bfi_e1 |-1.06*t2
-#'bfi_e1 |-0.53* t3
-#'bfi_e1 |0.06* t4
-#'bfi_e1 |0.75* t5
+#'  #fit the model in lavaan, treating items are categorical
+#'  fit<-lavaan::cfa(m1, data=Example, ordered=T)
 #'
-#'bfi_e2 |-1.16*t1
-#'bfi_e2 |-0.42*t2
-#'bfi_e2 |0.28*t3
-#'bfi_e2 |0.71*t4
-#'bfi_e2 |1.34*t5
+#' \donttest{catOne(fit)}
 #'
-#'bfi_e3 |-1.99* t1
-#'bfi_e3 |-1.27* t2
-#'bfi_e3 | 0.61*t3
-#'bfi_e3 | 0.09*t4
-#'bfi_e3 | 0.97*t5
+#' #Manual entry example (manual=TRUE)
 #'
-#'bfi_e4 |-2.05* t1
-#'bfi_e4 | -1.36*t2
-#'bfi_e4 | -0.74*t3
-#'bfi_e4 | -.004*t4
-#'bfi_e4 | 0.81*t5
+#' #one-factor model with correlated factors
+#' m1<-"F1=~X5+ X6 + X7 + X8 + X9"
 #'
-#'bfi_e5 | -1.12*t1
-#'bfi_e5 | -0.42*t2
-#'bfi_e5 | 0.16*t3
-#'bfi_e5 | 0.60*t4
-#'bfi_e5 | 1.21*t5
+#'  #fit the model, treating items are categorical
+#'  #lavaan is used here to shown where estimates come from
+#'  #but manual entry supports standardized estimates from models fit in any software
 #'
-#'bfi_e6 | -1.76*t1
-#'bfi_e6 | -1.18*t2
-#'bfi_e6 | -0.68*t3
-#'bfi_e6 | -0.03*t4
-#'bfi_e6 | 0.76*t5
+#'  fit<-lavaan::cfa(m1, data=Example, ordered=T)
+#'  lavaan::standardizedsolution(fit)
 #'
-#'bfi_e7 | -1.04*t1
-#'bfi_e7 | -0.31*t2
-#'bfi_e7 | 0.46*t3
-#'bfi_e7 | 0.78*t4
-#'bfi_e7 | 1.38*t5
+#' #thresholds go in model statement as
+#'   #(a)categorical item name
+#'   #(b) vertical pipe
+#'   #(c) estimate
+#'   #(d)times t+threshold number
 #'
-#'bfi_e8 | -1.74*t1
-#'bfi_e8 | -1.12*t2
-#'bfi_e8 | -0.64*t3
-#'bfi_e8 | -.002*t4
-#'bfi_e8 | 0.77*t5"
-#' \donttest{catOne(model=manmod,n=6649,manual=TRUE)}
+#' manual_model <-"F1=~.550*X5 + .614*X6 + .726*X7 + .723*X8 + .236*X9
+#'
+#'X5 |-0.274*t1
+#'X5 | 0.305*t2
+#'X5 | 0.765*t3
+#'X5 | 1.259*t4
+#'
+#'X6 |-0.279*t1
+#'X6 | 0.353*t2
+#'X6 | 0.779*t3
+#'X6 | 1.175*t4
+#'
+#'X7 |-0.269*t1
+#'X7 | 0.385*t2
+#'X7 | 0.871*t3
+#'X7 | 1.329*t4
+#'
+#'X8 |-0.274*t1
+#'X8 | 0.358*t2
+#'X8 | 0.779*t3
+#'X8 | 1.237*t4
+#'
+#'X9 |-0.269*t1
+#'X9 | 0.342*t2
+#'X9 | 0.745*t3
+#'X9 | 1.248*t4"
+#'
+#' \donttest{catOne(model=manual_model,n=500,manual=TRUE)}
 #'
 
 catOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLSMV"){
