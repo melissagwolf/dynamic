@@ -22,9 +22,9 @@
 #' @importFrom tidyr unite extract
 #' @importFrom patchwork plot_layout plot_annotation wrap_plots
 #'
-#' @author Patrick D Manapat, Melissa G Wolf, & Daniel McNeish
+#' @author Daniel McNeish, Melissa G Wolf, & Patrick D Manapat
 #'
-#' Maintainer: Patrick D Manapat <pmanapat@asu.edu>
+#' Maintainer: Daniel McNeish <dmcneish@asu.edu>
 #'
 #' @rdname hier1HB
 #'
@@ -139,12 +139,12 @@ hier1HB <- function(model,n=NULL,estimator="ML",plot=FALSE,manual=FALSE,reps=500
   res$data <- fit_data(results)
 
   #For each list element (misspecification) compute the cutoffs
-  misspec_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_M=quantile(SRMR_M, c(.05,.1)),
+  misspec_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_M=quantile(SRMR_M, c(.05,.1)),
                                                       RMSEA_M=quantile(RMSEA_M, c(.05,.1)),
                                                       CFI_M=quantile(CFI_M, c(.95,.9))))
 
   #For the true model, compute the cutoffs (these will all be the same - just need in list form)
-  true_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_T=quantile(SRMR_T, c(.95,.9)),
+  true_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_T=quantile(SRMR_T, c(.95,.9)),
                                                    RMSEA_T=quantile(RMSEA_T, c(.95,.9)),
                                                    CFI_T=quantile(CFI_T, c(.05,.1))))
 
@@ -225,12 +225,12 @@ hier1HB <- function(model,n=NULL,estimator="ML",plot=FALSE,manual=FALSE,reps=500
   #If user selects plot = T
   if(plot){
     #For each list element (misspecification) compute the cutoffs
-    misspec_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_M=quantile(SRMR_M, c(.05,.1)),
+    misspec_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_M=quantile(SRMR_M, c(.05,.1)),
                                                         RMSEA_M=quantile(RMSEA_M, c(.05,.1)),
                                                         CFI_M=quantile(CFI_M, c(.95,.9))))
 
     #For the true model, compute the cutoffs (these will all be the same - just need in list form)
-    true_sum <- purrr::map(results,~dplyr::summarise(.,SRMR_T=quantile(SRMR_T, c(.95,.9)),
+    true_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_T=quantile(SRMR_T, c(.95,.9)),
                                                      RMSEA_T=quantile(RMSEA_T, c(.95,.9)),
                                                      CFI_T=quantile(CFI_T, c(.05,.1))))
 

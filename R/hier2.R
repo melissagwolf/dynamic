@@ -22,9 +22,9 @@
 #' @importFrom tidyr unite extract
 #' @importFrom patchwork plot_layout plot_annotation wrap_plots
 #'
-#' @author Patrick D Manapat, Melissa G Wolf, & Daniel McNeish
+#' @author Daniel McNeish, Melissa G Wolf, & Patrick D Manapat
 #'
-#' Maintainer: Patrick D Manapat <pmanapat@asu.edu>
+#' Maintainer: Daniel McNeish <dmcneish@asu.edu>
 #'
 #' @rdname hier2
 #'
