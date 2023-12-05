@@ -19,5 +19,6 @@
 #' \item{X11}{Likert response to item 11}
 #' \item{X12}{Likert response to item 12}
 #' }
+#' @source Simulated with simstandard package
 #'
 "Example"
