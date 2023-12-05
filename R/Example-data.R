@@ -1,12 +1,7 @@
-#' DFI example data
+#' DFI Example Data
 #'
 #' Simulated 5-point Likert item responses to 12 items for 500 people.
 #'
-#' @docType data
-#'
-#' @usage data(Example)
-#'
-#' @keywords datasets
 #'
 #' @format ## 'Example'
 #' A data frame with 12 columns and 500 rows
