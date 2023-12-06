@@ -111,7 +111,7 @@ exactFit <- function(model,n,plot=FALSE,manual=FALSE,reps=500){
 
   #Extract cutoff values
   exact_vals <- exact_dat %>%
-    dplyr::summarise(chisq=round(quantile(chisq,c(.99,.95)),3),
+    dplyr::reframe(chisq=round(quantile(chisq,c(.99,.95)),3),
                      df=mean(df),
                      srmr=round(quantile(srmr,c(.99,.95)),3),
                      rmsea=round(quantile(rmsea,c(.99,.95)),3),
