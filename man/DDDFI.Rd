@@ -68,6 +68,40 @@ can also accommodate manual entry of the model statement and sample size. Some f
 dataset to be provided (e.g., missing data, categorical data). The app-based version of
 this function can be found at \href{https://dynamicfit.app/}{dynamicfit.app}.
 }
+\examples{
+#Example using a lavaan object as input (manual=FALSE)
+
+lavmod <- "F1 =~ x1 + x2 + x3
+           F2 =~ x4 + x5 + x6
+           F3 =~ x7 + x8 + x9"
+
+fit <- lavaan::cfa(lavmod,data=Holzinger)
+\donttest{DDDFI(fit)}
+
+#Manual entry example (manual=TRUE)
+
+#Holzinger 3-factor model
+lavmod <- "F1 =~ x1 + x2 + x3
+           F2 =~ x4 + x5 + x6
+           F3 =~ x7 + x8 + x9"
+
+ #fit the model,lavaan is used here to shown where estimates come from
+ #but manual entry supports standardized estimates from models fit in any software
+
+ fit<-lavaan::cfa(lavmod, data=Holzinger)
+ lavaan::standardizedsolution(fit)
+
+ #model statement with standardized estimates
+ manual_model <- "F1 =~ .772*x1 + .424*x2 + .581*x3
+            F2 =~ .852*x4 + .855*x5 + .838*x6
+            F3 =~ .570*x7 + .723*x8 + .665*x9
+            F1~~.459*F2
+            F1~~.471*F3
+            F2~~.283*F3"
+
+\donttest{DDDFI(model=manual_model,n=301,manual=TRUE)}
+
+}
 \author{
 Daniel McNeish & Melissa G Wolf
 

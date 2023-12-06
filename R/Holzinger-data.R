@@ -6,7 +6,7 @@
 #' @format ## 'Holzinger'
 #' A data frame with 10 columns and 301 rows
 #' \describe{
-#' \itme{id}{student identification number}
+#' \item{id}{student identification number}
 #' \item{x1}{Visual Perception score}
 #' \item{x2}{Cubes score}
 #' \item{x3}{Lozenges score}
@@ -17,7 +17,7 @@
 #' \item{x8}{Speended Dot Counting score}
 #' \item{x9}{Speeded Letter Discrimination score}
 #' }
-#' @source lavaan R packge \href{https://github.com/yrosseel/lavaan/tree/master/data}
+#' @source lavaan R package \url{https://github.com/yrosseel/lavaan/tree/master/data}
 #'
 #' @references Holzinger, K., & Swineford, F. (1939). A study in factor analysis: The stability of a bifactor solution. Supplementary Educational Monograph, no. 48. Chicago: University of Chicago Press.
 #'

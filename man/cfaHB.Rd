@@ -61,7 +61,7 @@ manmod <- "F1 =~ .602*Y1 + .805*Y2 + .516*Y3 + .415*Y4
            F2 =~ .413*Y5 + -.631*Y6
            F1 ~~ .443*F2
            Y4 ~~ .301*Y5"
-\donttest{exactFit(model=manmod,n=400,manual=TRUE)}
+\donttest{cfaHB(model=manmod,n=400,manual=TRUE)}
 
 }
 \author{

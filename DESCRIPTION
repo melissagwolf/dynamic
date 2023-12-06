@@ -29,6 +29,8 @@ Imports:
     patchwork (>= 1.1.1),
     semTools (>= 0.5.5),
     stringr (>= 1.4.0),
+    MASS (>= 7.3-30),
+    rlang (>= 1.1.0),
     purrr (>= 0.3.3)
 Suggests: 
     knitr,

@@ -53,7 +53,7 @@
 #'
 #' #Manual entry example (manual=TRUE)
 #'
-#' #' #two-factor model with correlated factors
+#' #two-factor model with correlated factors
 #' m1<-"
 #'  F1=~X2 + X3 + X4
 #'  F2=~X6 + X7 + X8

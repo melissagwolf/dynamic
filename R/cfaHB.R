@@ -46,7 +46,7 @@
 #'            F2 =~ .413*Y5 + -.631*Y6
 #'            F1 ~~ .443*F2
 #'            Y4 ~~ .301*Y5"
-#' \donttest{exactFit(model=manmod,n=400,manual=TRUE)}
+#' \donttest{cfaHB(model=manmod,n=400,manual=TRUE)}
 #'
 cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500){
 #test

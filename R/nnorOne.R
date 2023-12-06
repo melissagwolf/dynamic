@@ -46,7 +46,7 @@
 #'  #fit the model in lavaan, treating items are continuous
 #'  fit<-lavaan::cfa(m1, data=Example)
 #'
-#' \donttest{nnorOne(fit)}
+#' \donttest{nnorOne(fit, data=Example)}
 #'
 #' #Manual entry example (manual=TRUE)
 #'
@@ -58,7 +58,7 @@
 #'  #but manual entry supports standardized estimates from models fit in any software
 #'
 #'  fit<-lavaan::cfa(m1, data=Example)
-#'  lavaan::standardizedsolution(fit, data=Example)
+#'  lavaan::standardizedsolution(fit)
 #'
 #' manual_model <-"F1=~.517*X5 + .549*X6 + .679*X7 + .694*X8 + .203*X9"
 #'

@@ -38,7 +38,7 @@
 #' m1<-"F1=~X5+ X6 + X7 + X8 + X9"
 #'
 #'  #fit the model in lavaan, treating items are categorical
-#'  fit<-lavaan::cfa(m1, data=Example, ordered=T)
+#'  fit<-lavaan::cfa(m1, data=Example, ordered=TRUE)
 #'
 #' \donttest{catOne(fit)}
 #'
@@ -51,7 +51,7 @@
 #'  #lavaan is used here to shown where estimates come from
 #'  #but manual entry supports standardized estimates from models fit in any software
 #'
-#'  fit<-lavaan::cfa(m1, data=Example, ordered=T)
+#'  fit<-lavaan::cfa(m1, data=Example, ordered=TRUE)
 #'  lavaan::standardizedsolution(fit)
 #'
 #' #thresholds go in model statement as

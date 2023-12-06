@@ -53,6 +53,43 @@ This function generates DFI cutoffs for multi-factor CFA models that treats Like
 
 The app-based version of this function can be found at \href{https://dynamicfit.app/}{dynamicfit.app}.
 }
+\examples{
+#Example using a lavaan object as input (manual=FALSE)
+
+#two-factor model with correlated factors
+m1<-"
+ F1=~X2 + X3 + X4
+ F2=~X6 + X7 + X8
+ F1~~F2"
+
+ #fit the model in lavaan, treating items are continuous
+ fit<-lavaan::cfa(m1, data=Example)
+
+\donttest{likertHB(fit, data=Example)}
+
+#Manual entry example (manual=TRUE)
+
+#two-factor model with correlated factors
+m1<-"
+ F1=~X2 + X3 + X4
+ F2=~X6 + X7 + X8
+ F1~~F2"
+
+ #fit the model, treating items are continuous
+ #lavaan is used here to shown where estimates come from
+ #but manual entry supports standardized estimates from models fit in any software
+
+ fit<-lavaan::cfa(m1, data=Example)
+ lavaan::standardizedsolution(fit)
+
+
+manual_model <-"F1=~.554*X2 + .654*X3 + .733*X4
+ F2=~.537*X6 + .666*X7 + .723*X8
+ F1~~.339*F2"
+
+\donttest{likertHB(model=manual_model,data=Example,n=500,manual=TRUE)}
+
+}
 \author{
 Daniel McNeish & Melissa G Wolf
 

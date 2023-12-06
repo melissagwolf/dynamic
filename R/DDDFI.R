@@ -45,7 +45,7 @@
 #' @return Direct Discrepancy Dynamic fit index (DFI) cutoffs for CFI, RMSEA, and RMSEA 90% CI.
 #' @export
 #'
-#'#' @examples
+#' @examples
 #' #Example using a lavaan object as input (manual=FALSE)
 #'
 #' lavmod <- "F1 =~ x1 + x2 + x3
@@ -114,7 +114,7 @@ if(plot.dist & is.null(data)){
 if(manual){
 
   # error for using manual=T with a lavaan object input
-  tryCatch(cleanmodel_DDFI(model),
+  tryCatch(cleanmodel_3DFI(model),
            error=function(err5){
              if (grepl("no method for coercing this S4 class to a vector", err5)){
                stop("dynamic Error: Did you accidentally include 'manual=TRUE' with a non-manually entered lavaan object?")

@@ -41,13 +41,13 @@
 #'  F1~~F2"
 #'
 #'  #fit the model in lavaan, treating items are categorical
-#'  fit<-lavaan::cfa(m1, data=Example, ordered=T)
+#'  fit<-lavaan::cfa(m1, data=Example, ordered=TRUE)
 #'
 #' \donttest{catHB(fit)}
 #'
 #' #Manual entry example (manual=TRUE)
 #'
-#' #' #two-factor model with correlated factors
+#' #two-factor model with correlated factors
 #' m1<-"
 #'  F1=~X1 + X2 +X3
 #'  F2=~X6 + X7 + X8 + X12
@@ -57,7 +57,7 @@
 #'  #lavaan is used here to shown where estimates come from
 #'  #but manual entry supports standardized estimates from models fit in any software
 #'
-#'  fit<-lavaan::cfa(m1, data=Example, ordered=T)
+#'  fit<-lavaan::cfa(m1, data=Example, ordered=TRUE)
 #'  lavaan::standardizedsolution(fit)
 #'
 #' #thresholds go in model statement as
@@ -67,7 +67,7 @@
 #'   #(d)times t+threshold number
 #'
 #' manual_model <-"F1=~.448*X1 + .557*X2 + .770*X3
-#'  F2=~.612*X6 + .684*X7 + .736*X8 + .365*X9
+#'  F2=~.612*X6 + .684*X7 + .736*X8 + .365*X12
 #'  F1~~.424*F2
 #'
 #'X1 |-0.285*t1

@@ -6,7 +6,7 @@
 #' @importFrom simstandard sim_standardized
 #' @importFrom purrr map map_dfr
 #' @import ggplot2
-#' @importFrom stats quantile qnorm
+#' @importFrom stats quantile qnorm cov2cor density rbeta rnorm runif
 #' @importFrom semTools bsBootMiss
 #' @importFrom MASS mvrnorm
 
@@ -14,6 +14,8 @@
 ############################################################################
 ########################### Multiple Functions #############################
 ############################################################################
+
+value1<-density<-disc<-l<-value<-xx<-rand<-..density..<-NULL
 
 #### Function to create model statement without numbers from user model (for input) ####
 #Copy from OG
@@ -1043,7 +1045,7 @@ equiv_p <- function(obj){
 equiv_T_ml <- function(obj){
   #Warning message to hide warning when someone enters a non-lavaan object (error message will display instead)
   #Only need it here because this is the first argument in equivTest
-  T_ml <- base::withCallingHandlers(base::unlist(obj@test[["standard"]][["stat"]]), warning=hide_objtest)
+  T_ml <- base::unlist(obj@test[["standard"]][["stat"]])
   return(T_ml)
 }
 
@@ -1094,7 +1096,9 @@ exact_fit_dat <- function(model,n,reps){
 
   #Run 500 cfa
   true_sem <- purrr::map(true_data$data,~base::withCallingHandlers(lavaan::sem(model = mod, data=., std.lv=TRUE),
-                                                                   warning=hide_ov))
+                                                                   check.gradient=FALSE,
+                                                                   check.post=FALSE,
+                                                                   check.vcov=FALSE))
 
   #Extract fit stats from each rep (list) into a data frame and clean
   true_fit_sum <- purrr::map_dfr(true_sem,~lavaan::fitMeasures(., c("chisq", "df","srmr","rmsea","cfi")))

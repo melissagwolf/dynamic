@@ -8,7 +8,7 @@
 ## 'Holzinger'
 A data frame with 10 columns and 301 rows
 \describe{
-\itme{id}{student identification number}
+\item{id}{student identification number}
 \item{x1}{Visual Perception score}
 \item{x2}{Cubes score}
 \item{x3}{Lozenges score}
@@ -21,7 +21,7 @@ A data frame with 10 columns and 301 rows
 }
 }
 \source{
-lavaan R packge \href{https://github.com/yrosseel/lavaan/tree/master/data}
+lavaan R package \url{https://github.com/yrosseel/lavaan/tree/master/data}
 }
 \usage{
 Holzinger

@@ -62,7 +62,7 @@ manmod <- "G =~ .51*F1 + .83*F2 + .97*F3 + .83*F4 + .87*F5 + .55*Y7
 
 }
 \author{
-Patrick D Manapat, Melissa G Wolf, & Daniel McNeish
+Daniel McNeish, Melissa G Wolf, & Patrick D Manapat
 
-Maintainer: Patrick D Manapat <pmanapat@asu.edu>
+Maintainer: Daniel McNeish <dmcneish@asu.edu>
 }

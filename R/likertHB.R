@@ -51,14 +51,14 @@
 #'
 #' #Manual entry example (manual=TRUE)
 #'
-#' #' #two-factor model with correlated factors
+#' #two-factor model with correlated factors
 #' m1<-"
 #'  F1=~X2 + X3 + X4
 #'  F2=~X6 + X7 + X8
 #'  F1~~F2"
 #'
 #'  #fit the model, treating items are continuous
-#'  #lavaan is used here to shown where estimates come frOm
+#'  #lavaan is used here to shown where estimates come from
 #'  #but manual entry supports standardized estimates from models fit in any software
 #'
 #'  fit<-lavaan::cfa(m1, data=Example)
