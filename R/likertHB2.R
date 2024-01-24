@@ -237,7 +237,7 @@ likertHB2 <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",r
   pp0<-c(rep("",(length(misspec_sum)+1)))
 
   #matrix of cross-loadings added at each level
-  mag <- multi_add_HB(model) %>%
+  mag <- multi_add_HB(model9) %>%
     tidyr::separate(V1,into=c("a","b","Magnitude","d","e"),sep=" ") %>%
     dplyr::select(Magnitude) %>%
     mutate(Magnitude=as.numeric(Magnitude),
