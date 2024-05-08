@@ -57,6 +57,24 @@ RelRep <- function(data, items=c(names(data)), rel="alpha", missing="NA", method
     stop("Error: method='raw' requires a user-defined values both the 'raw.low=' and 'raw.high' options")
   }
 
+  if (raw.high>1) {
+    stop(
+      "Error: The 'raw.high =' option exceeds 1.
+             Check that your width was accurately entered")
+  }
+
+  if (raw.low<0) {
+    stop(
+      "Error: The 'low =' option is below 0.
+             Check that your width was accurately entered")
+  }
+
+  if (raw.low>raw.high | raw.low==raw.high) {
+      stop(
+        "Error: The interval lower bound exceeds the interval upper bound.
+                 Check that your width was accurately entered")
+    }
+
   ##recode missing data to NA for R
   ##only used in Shiny app
   data[data == missing] <- NA
@@ -176,7 +194,6 @@ RelRep <- function(data, items=c(names(data)), rel="alpha", missing="NA", method
          Check that your width was accurately entered", immediate.=T)
       }
 
-
     upp<-est+width
 
     if (upp>1) {
@@ -191,31 +208,11 @@ RelRep <- function(data, items=c(names(data)), rel="alpha", missing="NA", method
   }
 
   if(method=="raw"){
-
     ci<-Bayesrel::strel(data=dat, estimates=rel, n.burnin=5000,n.iter=10000, missing="listwise")
     est<-as.numeric(ci$Bayes$est)
 
     low<-raw.low
     upp<-raw.high
-
-    if (upp>1) {
-            stop(
-            "Error: The 'raw.high =' option exceeds 1.
-             Check that your width was accurately entered")
-    }
-
-    if (low<0) {
-            stop(
-            "Error: The 'low =' option is below 0.
-             Check that your width was accurately entered")
-
-      if (low>=upp) {
-                stop(
-                "Error: The interval lower bound exceeds the interval upper bound.
-                 Check that your width was accurately entered")
-
-      }
-    }
   }
 
   #percentage within CI, above CI, and below CI
