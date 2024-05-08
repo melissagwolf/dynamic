@@ -3501,6 +3501,12 @@ data_likert2 <- function(model,data, n,reps){
 
   true_dgm <- model
 
+  factors <- lavaan::lavaanify(model, fixed.x=FALSE) %>%
+    dplyr::filter(lhs != rhs)%>%
+    dplyr::filter(op=="=~") %>%
+    dplyr::select(lhs) %>%
+    base::unique()
+
   #Get model-implied matrix of input model
   norm <- simstandard::sim_standardized_matrices(true_dgm)
   normx<-norm$Correlations$R
