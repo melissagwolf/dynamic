@@ -139,76 +139,108 @@ cfaOne <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500)
   #Save the data and make it exportable
   res$data <- fit_data(results)
 
-  #For each list element (misspecification) compute the cutoffs
-  misspec_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_M=stats::quantile(SRMR_M, c(.05,.1)),
-                                                      RMSEA_M=stats::quantile(RMSEA_M, c(.05,.1)),
-                                                      CFI_M=stats::quantile(CFI_M, c(.95,.9))))
+  misspec_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_M=stats::quantile(SRMR_M, c(seq(0.05,1,0.01))),
+                                                    RMSEA_M=stats::quantile(RMSEA_M, c(seq(0.05,1,0.01))),
+                                                    CFI_M=stats::quantile(CFI_M, c(seq(0.95,0,-0.01)))))
 
   #For the true model, compute the cutoffs (these will all be the same - just need in list form)
-  true_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_T=stats::quantile(SRMR_T, c(.95,.9)),
-                                                   RMSEA_T=stats::quantile(RMSEA_T, c(.95,.9)),
-                                                   CFI_T=stats::quantile(CFI_T, c(.05,.1))))
+  true_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_T=stats::quantile(SRMR_T, c(.95)),
+                                                 RMSEA_T=stats::quantile(RMSEA_T, c(.95)),
+                                                 CFI_T=stats::quantile(CFI_T, c(.05))))
 
-  #Bind each of the misspecified cutoffs to the true cutoffs, listwise
-  Table <- purrr::map(misspec_sum,~base::cbind(.,true_sum[[1]]) %>%
-                        dplyr::mutate(SRMR_R=base::round(SRMR_M,3),
-                                      RMSEA_R=base::round(RMSEA_M,3),
-                                      CFI_R=base::round(CFI_M,3),
-                                      SRMR=base::ifelse(SRMR_T<SRMR_M,SRMR_R,"NONE"),
-                                      RMSEA=base::ifelse(RMSEA_T<RMSEA_M,RMSEA_R,"NONE"),
-                                      CFI=base::ifelse(CFI_T>CFI_M,CFI_R,"NONE")) %>%
-                        dplyr::select(SRMR,RMSEA,CFI))
+  fit<-list()
+  S<-list()
+  R<-list()
+  C<-list()
+  final<-list()
+  for (i in 1:length(misspec_sum))
+  {
+    fit[[i]]<-cbind(misspec_sum[[i]], true_sum[[i]])
+    fit[[i]]$Power<-seq(.95, 0.0, -.01)
+    fit[[i]]$S<-ifelse(fit[[i]]$SRMR_M >= fit[[i]]$SRMR_T, 1, 0)
+    fit[[i]]$R<-ifelse(fit[[i]]$RMSEA_M >= fit[[i]]$RMSEA_T, 1, 0)
+    fit[[i]]$C<-ifelse(fit[[i]]$CFI_M <= fit[[i]]$CFI_T, 1, 0)
+    S[[i]]<-subset(fit[[i]], subset=(!duplicated(fit[[i]][('S')])|fit[[i]][('Power')]==0), select=c("SRMR_M","Power","S")) %>% filter(S==1|Power==0)
+    R[[i]]<-subset(fit[[i]], subset=(!duplicated(fit[[i]][('R')])|fit[[i]][('Power')]==0), select=c("RMSEA_M","Power","R")) %>% filter(R==1|Power==0)
+    C[[i]]<-subset(fit[[i]], subset=(!duplicated(fit[[i]][('C')])|fit[[i]][('Power')]==0), select=c("CFI_M","Power","C"))  %>% filter(C==1|Power==0)
+    colnames(S[[i]])<-c("SRMR","PowerS")
+    colnames(R[[i]])<-c("RMSEA","PowerR")
+    colnames(C[[i]])<-c("CFI","PowerC")
 
-  #This is to clean up the table for presentation
-  #list is a function within mutate to apply function lead across each element
-  Row2 <- purrr::map_dfr(Table,~dplyr::mutate(.,SRMR_1=SRMR,
-                                              RMSEA_1=RMSEA,
-                                              CFI_1=CFI) %>%
-                           dplyr::mutate_at(c("SRMR_1","RMSEA_1","CFI_1"),base::list(dplyr::lead)) %>%
-                           dplyr::slice(1) %>%
-                           dplyr::mutate(SRMR=base::ifelse(base::is.character(SRMR),SRMR_1,"--"),
-                                         RMSEA=base::ifelse(base::is.character(RMSEA),RMSEA_1,"--"),
-                                         CFI=base::ifelse(base::is.character(CFI),CFI_1,"--"),
-                                         SRMR=stringr::str_replace_all(base::as.character(SRMR),"0\\.","."),
-                                         RMSEA=stringr::str_replace_all(base::as.character(RMSEA),"0\\.","."),
-                                         CFI=stringr::str_replace_all(base::as.character(CFI),"0\\.",".")) %>%
-                           dplyr::select(SRMR,RMSEA,CFI))
+    final[[i]]<-cbind(S[[i]][1,],R[[i]][1,],C[[i]][1,])
+    final[[i]]<-final[[i]][c("SRMR","PowerS","RMSEA","PowerR","CFI","PowerC")]
+  }
 
-  #Still cleaning
-  #Unlist Table
-  Table_C <- purrr::map_dfr(Table,~dplyr::mutate(.,SRMR=stringr::str_replace_all(base::as.character(SRMR),"0\\.","."),
-                                                 RMSEA=stringr::str_replace_all(base::as.character(RMSEA),"0\\.","."),
-                                                 CFI=stringr::str_replace_all(base::as.character(CFI),"0\\.",".")))
+  L0<-data.frame(cbind(true_sum[[1]]$SRMR_T,.95,true_sum[[1]]$RMSEA_T,0.95,true_sum[[1]]$CFI_T,0.95))%>%
+    `colnames<-`(c("SRMR","PowerS","RMSEA","PowerR","CFI","PowerC"))
 
-  #Cleaning
-  Table_C[base::seq(2,nrow(Table_C),by=2),] <- Row2
+  if(length(misspec_sum)==3) {
+    Fit<-round(rbind(L0,final[[1]],final[[2]],final[[3]]),3)
+  }
 
-  #Create row names for level
-  Table_C$levelnum <- base::paste("Level", base::rep(1:(base::nrow(Table_C)/2),each=2))
+  if(length(misspec_sum)==2) {
+    Fit<-round(rbind(L0,final[[1]],final[[2]]),3)
+  }
 
-  #Create row names for proportions
-  Table_C$cut <- base::rep(c("95/5","90/10"))
+  if(length(misspec_sum)==1) {
+    Fit<-round(rbind(L0,final[[1]]),3)
+  }
 
-  #Add rownames to final table
-  Final_Table <- Table_C %>%
-    tidyr::unite(Cut,levelnum,cut,sep=": ") %>%
-    tibble::column_to_rownames(var='Cut')
+  fit1<-unlist(Fit)%>% matrix(nrow=(length(misspec_sum)+1), ncol=6) %>%
+    `colnames<-`(c("SRMR","PowerS","RMSEA","PowerR","CFI","PowerC"))
+
+  PS<-paste(round(100*fit1[,2], 2), "%", sep="")
+  PR<-paste(round(100*fit1[,4], 2), "%", sep="")
+  PC<-paste(round(100*fit1[,6], 2), "%", sep="")
+
+  for (j in 2:(length(misspec_sum)+1)) {
+    if(fit1[j,2]<.50){fit1[j,1]<-"NONE"}
+    if(fit1[j,4]<.50){fit1[j,3]<-"NONE"}
+    if(fit1[j,6]<.50){fit1[j,5]<-"NONE"}
+  }
+  fit1[,2]<-PS
+  fit1[,4]<-PR
+  fit1[,6]<-PC
+
+  pp<-c(rep("--",(length(misspec_sum)+1)))
+  pp0<-c(rep("",(length(misspec_sum)+1)))
+
+  SS<-noquote(matrix(rbind(fit1[,1],fit1[,2],pp0),ncol=1))
+  RR<-noquote(matrix(rbind(fit1[,3],fit1[,4],pp0),ncol=1))
+  CC<-noquote(matrix(rbind(fit1[,5],fit1[,6],pp0),ncol=1))
+
+  Table<-noquote(cbind(SS,RR,CC) %>%
+                   `colnames<-`(c("SRMR","RMSEA","CFI")))
+
+  if(length(misspec_sum)==3) {
+    rownames(Table)<-c("Level-0","Specificity", "","Level-1", "Sensitivity","", "Level-2", "Sensitivity","", "Level-3", "Sensitivity","")
+  }
+
+  if(length(misspec_sum)==2) {
+    rownames(Table)<-c("Level-0","Specificity", "","Level-1", "Sensitivity","", "Level-2", "Sensitivity","")
+  }
+
+  if(length(misspec_sum)==1) {
+    rownames(Table)<-c("Level-0","Specificity", "","Level-1", "Sensitivity","")
+  }
+
+    Table<-Table[1:(nrow(Table)-1),]
 
   #Put into list
-  res$cutoffs <- Final_Table
+  res$cutoffs <- Table
 
   #If user selects plot = T
   if(plot){
 
     #For each list element (misspecification) compute the cutoffs
-    misspec_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_M=stats::quantile(SRMR_M, c(.05,.1)),
-                                                        RMSEA_M=stats::quantile(RMSEA_M, c(.05,.1)),
-                                                        CFI_M=stats::quantile(CFI_M, c(.95,.9))))
+    #misspec_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_M=stats::quantile(SRMR_M, c(.05,.1)),
+    #                                                    RMSEA_M=stats::quantile(RMSEA_M, c(.05,.1)),
+    #                                                    CFI_M=stats::quantile(CFI_M, c(.95,.9))))
 
     #For the true model, compute the cutoffs (these will all be the same - just need in list form)
-    true_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_T=stats::quantile(SRMR_T, c(.95,.9)),
-                                                     RMSEA_T=stats::quantile(RMSEA_T, c(.95,.9)),
-                                                     CFI_T=stats::quantile(CFI_T, c(.05,.1))))
+    #true_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_T=stats::quantile(SRMR_T, c(.95,.9)),
+    #                                                 RMSEA_T=stats::quantile(RMSEA_T, c(.95,.9)),
+    #                                                 CFI_T=stats::quantile(CFI_T, c(.05,.1))))
 
     #Select just those variables and rename columns to be the same
     Misspec_dat <- purrr::map(results,~dplyr::select(.,SRMR_M:Type_M) %>%

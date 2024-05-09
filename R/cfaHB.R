@@ -147,100 +147,116 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500){
   res$data <- fit_data(results)
 
   #For each list element (misspecification) compute the cutoffs
-  misspec_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_M=quantile(SRMR_M, c(.05,.1)),
-                                                      RMSEA_M=quantile(RMSEA_M, c(.05,.1)),
-                                                      CFI_M=quantile(CFI_M, c(.95,.9))))
+  misspec_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_M=stats::quantile(SRMR_M, c(seq(0.05,1,0.01))),
+                                                    RMSEA_M=stats::quantile(RMSEA_M, c(seq(0.05,1,0.01))),
+                                                    CFI_M=stats::quantile(CFI_M, c(seq(0.95,0,-0.01)))))
 
   #For the true model, compute the cutoffs (these will all be the same - just need in list form)
-  true_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_T=quantile(SRMR_T, c(.95,.9)),
-                                                   RMSEA_T=quantile(RMSEA_T, c(.95,.9)),
-                                                   CFI_T=quantile(CFI_T, c(.05,.1))))
+  true_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_T=stats::quantile(SRMR_T, c(.95)),
+                                                 RMSEA_T=stats::quantile(RMSEA_T, c(.95)),
+                                                 CFI_T=stats::quantile(CFI_T, c(.05))))
 
-  #Bind each of the misspecified cutoffs to the true cutoffs, listwise
-  Table <- purrr::map(misspec_sum,~cbind(.,true_sum[[1]]) %>%
-                        dplyr::mutate(SRMR_R=base::round(SRMR_M,3),
-                                      RMSEA_R=base::round(RMSEA_M,3),
-                                      CFI_R=base::round(CFI_M,3),
-                                      SRMR=base::ifelse(SRMR_T<SRMR_M,SRMR_R,"NONE"),
-                                      RMSEA=base::ifelse(RMSEA_T<RMSEA_M,RMSEA_R,"NONE"),
-                                      CFI=base::ifelse(CFI_T>CFI_M,CFI_R,"NONE")) %>%
-                        dplyr::select(SRMR,RMSEA,CFI))
+  fit<-list()
+  S<-list()
+  R<-list()
+  C<-list()
+  final<-list()
+  for (i in 1:length(misspec_sum))
+  {
+    fit[[i]]<-cbind(misspec_sum[[i]], true_sum[[i]])
+    fit[[i]]$Power<-seq(.95, 0.0, -.01)
+    fit[[i]]$S<-ifelse(fit[[i]]$SRMR_M >= fit[[i]]$SRMR_T, 1, 0)
+    fit[[i]]$R<-ifelse(fit[[i]]$RMSEA_M >= fit[[i]]$RMSEA_T, 1, 0)
+    fit[[i]]$C<-ifelse(fit[[i]]$CFI_M <= fit[[i]]$CFI_T, 1, 0)
+    S[[i]]<-subset(fit[[i]], subset=(!duplicated(fit[[i]][('S')])|fit[[i]][('Power')]==0), select=c("SRMR_M","Power","S")) %>% filter(S==1|Power==0)
+    R[[i]]<-subset(fit[[i]], subset=(!duplicated(fit[[i]][('R')])|fit[[i]][('Power')]==0), select=c("RMSEA_M","Power","R")) %>% filter(R==1|Power==0)
+    C[[i]]<-subset(fit[[i]], subset=(!duplicated(fit[[i]][('C')])|fit[[i]][('Power')]==0), select=c("CFI_M","Power","C"))  %>% filter(C==1|Power==0)
+    colnames(S[[i]])<-c("SRMR","PowerS")
+    colnames(R[[i]])<-c("RMSEA","PowerR")
+    colnames(C[[i]])<-c("CFI","PowerC")
 
-  #This is to clean up the table for presentation
-  #list is a function within mutate to apply function lead across each element
-  Row2 <- purrr::map_dfr(Table,~dplyr::mutate(.,SRMR_1=SRMR,
-                                              RMSEA_1=RMSEA,
-                                              CFI_1=CFI) %>%
-                           dplyr::mutate_at(c("SRMR_1","RMSEA_1","CFI_1"),list(dplyr::lead)) %>%
-                           dplyr::slice(1) %>%
-                           dplyr::mutate(SRMR=ifelse(is.character(SRMR),SRMR_1,"--"),
-                                         RMSEA=ifelse(is.character(RMSEA),RMSEA_1,"--"),
-                                         CFI=ifelse(is.character(CFI),CFI_1,"--"),
-                                         SRMR=stringr::str_replace_all(as.character(SRMR),"0\\.","."),
-                                         RMSEA=stringr::str_replace_all(as.character(RMSEA),"0\\.","."),
-                                         CFI=stringr::str_replace_all(as.character(CFI),"0\\.",".")) %>%
-                           dplyr::select(SRMR,RMSEA,CFI))
+    final[[i]]<-cbind(S[[i]][1,],R[[i]][1,],C[[i]][1,])
+    final[[i]]<-final[[i]][c("SRMR","PowerS","RMSEA","PowerR","CFI","PowerC")]
+  }
 
-  #Still cleaning
-  #Unlist Table
-  Table_C <- purrr::map_dfr(Table,~dplyr::mutate(.,SRMR=stringr::str_replace_all(as.character(SRMR),"0\\.","."),
-                                                 RMSEA=stringr::str_replace_all(as.character(RMSEA),"0\\.","."),
-                                                 CFI=stringr::str_replace_all(as.character(CFI),"0\\.",".")))
+  L0<-data.frame(cbind(true_sum[[1]]$SRMR_T,.95,true_sum[[1]]$RMSEA_T,0.95,true_sum[[1]]$CFI_T,0.95))%>%
+    `colnames<-`(c("SRMR","PowerS","RMSEA","PowerR","CFI","PowerC"))
 
-  #Cleaning
-  Table_C[seq(2,nrow(Table_C),by=2),] <- Row2
+  ##append table with other cutoffs,  loop to control different number of levels
+  Fit<-round(L0,3)
+  for (i in 1:length(misspec_sum)){
+    Fit<-round(rbind(Fit, final[[i]]),3)
+  }
 
-  #For row names
-  #Can't use number_factor because some factors may be ineligible for cross-loadings
-  #Instead, just grab the length of number of misspecifications we're adding
-  num_fact <- length(DGM_Multi_HB(model9))
+  fit1<-unlist(Fit)%>% matrix(nrow=(length(misspec_sum)+1), ncol=6) %>%
+    `colnames<-`(c("SRMR","PowerS","RMSEA","PowerR","CFI","PowerC"))
 
-  #Create row names for level
-  Table_C$levelnum <- paste("Level", rep(1:num_fact,each=2))
+  PS<-paste(round(100*fit1[,2], 2), "%", sep="")
+  PR<-paste(round(100*fit1[,4], 2), "%", sep="")
+  PC<-paste(round(100*fit1[,6], 2), "%", sep="")
 
-  #Create row names for proportions
-  Table_C$cut <- rep(c("95/5","90/10"))
+  for (j in 2:(length(misspec_sum)+1)) {
+    if(fit1[j,2]<.50){fit1[j,1]<-"NONE"}
+    if(fit1[j,4]<.50){fit1[j,3]<-"NONE"}
+    if(fit1[j,6]<.50){fit1[j,5]<-"NONE"}
+  }
+  fit1[,2]<-PS
+  fit1[,4]<-PR
+  fit1[,6]<-PC
 
-  #Add cross-loading magnitude
-  suppressMessages(mag <- multi_add_HB(model9) %>%
-                     tidyr::separate(V1,into=c("a","b","Magnitude","d","e"),sep=" ") %>%
-                     select(Magnitude) %>%
-                     mutate(Magnitude=as.numeric(Magnitude),
-                            Magnitude=round(Magnitude,digits=3)) %>%
-                     slice(rep(1:n,each=2)))
+  #create blanks to make table easier to read
+  pp<-c(rep("--",(length(misspec_sum)+1)))
+  pp0<-c(rep("",(length(misspec_sum)+1)))
 
-  #Delete rownames (dplyr update?)
-  rownames(mag) <- NULL
+  #matrix of cross-loadings added at each level
+  mag <- multi_add_HB(model9) %>%
+    tidyr::separate(V1,into=c("a","b","Magnitude","d","e"),sep=" ") %>%
+    select(Magnitude) %>%
+    mutate(Magnitude=as.numeric(Magnitude),
+           Magnitude=round(Magnitude,digits=3))
 
-  #Clean cross-loading magnitude
-  even <- seq_len(nrow(mag))%%2
-  mag2 <- cbind(mag,even) %>%
-    mutate(Magnitude=ifelse(even==0," ",Magnitude)) %>%
-    mutate(Magnitude=stringr::str_replace_all(as.character(Magnitude),"0\\.",".")) %>%
-    select(Magnitude)
+  #Create column of cross-loadings added at each level
+  mname<-c("NONE","","")
+  for (i in 1:length(misspec_sum)){
+    mi<-c(mag[i,],"","")
+    mname<-cbind(mname,mi)
+  }
 
-  #Add to table
-  Table_C <- cbind(Table_C,mag2)
+  #format column for each index and the misspecification magnitude
+  SS<-noquote(matrix(rbind(fit1[,1],fit1[,2],pp0),ncol=1))
+  RR<-noquote(matrix(rbind(fit1[,3],fit1[,4],pp0),ncol=1))
+  CC<-noquote(matrix(rbind(fit1[,5],fit1[,6],pp0),ncol=1))
+  MM<-noquote(matrix(mname, ncol=1))
 
-  #Add rownames to final table
-  Final_Table <- Table_C %>%
-    tidyr::unite(Cut,levelnum,cut,sep=": ") %>%
-    tibble::column_to_rownames(var='Cut')
+  #bind columns together into one table
+  Table<-noquote(cbind(SS,RR,CC,MM) %>%
+                   `colnames<-`(c("SRMR","RMSEA","CFI","Magnitude")))
+
+  #update row names
+  rname<-c("Level-0","Specificity", "")
+  for (i in 1:length(misspec_sum)){
+    ri<-c(paste("Level-",i,sep=""),"Sensitivity","")
+    rname<-cbind(rname,ri)
+  }
+  rownames(Table)<-rname
+
+  #delete last blank row
+  Table<-Table[1:(nrow(Table)-1),]
 
   #Put into list
-  res$cutoffs <- Final_Table
+  res$cutoffs <- Table
 
   #If user selects plot = T
   if(plot){
     #For each list element (misspecification) compute the cutoffs
-    misspec_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_M=quantile(SRMR_M, c(.05,.1)),
-                                                        RMSEA_M=quantile(RMSEA_M, c(.05,.1)),
-                                                        CFI_M=quantile(CFI_M, c(.95,.9))))
+    #misspec_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_M=quantile(SRMR_M, c(.05,.1)),
+    #                                                    RMSEA_M=quantile(RMSEA_M, c(.05,.1)),
+    #                                                    CFI_M=quantile(CFI_M, c(.95,.9))))
 
     #For the true model, compute the cutoffs (these will all be the same - just need in list form)
-    true_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_T=quantile(SRMR_T, c(.95,.9)),
-                                                     RMSEA_T=quantile(RMSEA_T, c(.95,.9)),
-                                                     CFI_T=quantile(CFI_T, c(.05,.1))))
+    #true_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_T=quantile(SRMR_T, c(.95,.9)),
+    #                                                 RMSEA_T=quantile(RMSEA_T, c(.95,.9)),
+    #                                                 CFI_T=quantile(CFI_T, c(.05,.1))))
 
     #Select just those variables and rename columns to be the same
     Misspec_dat <- purrr::map(results,~dplyr::select(.,SRMR_M:Type_M) %>%
@@ -252,26 +268,26 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500){
 
     #For each element in the list, bind the misspecified cutoffs to the true cutoffs
     #rbind doesn't work well with lists (needs do.call statement)
-    plot <- lapply(seq(length(Misspec_dat)),function(x) dplyr::bind_rows(Misspec_dat[x],True_dat[x]))
+    plot <- base::lapply(base::seq(base::length(Misspec_dat)),function(x) dplyr::bind_rows(Misspec_dat[x],True_dat[x]))
 
     #Plot SRMR. Need map2 and data=.x (can't remember why).
-    SRMR_plot <- purrr::map2(plot,misspec_sum,~ggplot(data=.x,aes(x=SRMR,fill=Model))+
+    SRMR_plot <- purrr::map2(plot,final,~ggplot(data=.x,aes(x=SRMR,fill=Model))+
                                geom_histogram(position="identity",
                                               alpha=.5, bins=30)+
                                scale_fill_manual(values=c("#E9798C","#66C2F5"))+
-                               geom_vline(aes(xintercept=.y$SRMR_M[1],
-                                              linetype="misspec_sum$SRMR_M[1]",color="misspec_sum$SRMR_M[1]"),
+                               geom_vline(aes(xintercept=.y$SRMR[1],
+                                              linetype="final$SRMR[1]",color="final$SRMR[1]"),
                                           size=.6)+
                                geom_vline(aes(xintercept=.08,
                                               linetype=".08",color=".08"),
                                           size=.75)+
                                scale_color_manual(name="Cutoff Values",
-                                                  labels=c("Dynamic Cutoff","Hu & Benter Cutoff"),
-                                                  values=c("misspec_sum$SRMR_M[1]"="black",
+                                                  labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
+                                                  values=c("final$SRMR[1]"="black",
                                                            ".08"="black"))+
                                scale_linetype_manual(name="Cutoff Values",
-                                                     labels=c("Dynamic Cutoff","Hu & Benter Cutoff"),
-                                                     values=c("misspec_sum$SRMR[1]"="longdash",
+                                                     labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
+                                                     values=c("final$SRMR[1]"="longdash",
                                                               ".08"="dotted"))+
                                theme(axis.title.y = element_blank(),
                                      axis.text.y = element_blank(),
@@ -283,23 +299,23 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500){
                                      legend.box = "vertical"))
 
     #Plot RMSEA.  Need map2 and data=.x (can't remember why).
-    RMSEA_plot <- purrr::map2(plot,misspec_sum,~ggplot(data=.x,aes(x=RMSEA,fill=Model))+
+    RMSEA_plot <- purrr::map2(plot,final,~ggplot(data=.x,aes(x=RMSEA,fill=Model))+
                                 geom_histogram(position="identity",
                                                alpha=.5, bins=30)+
                                 scale_fill_manual(values=c("#E9798C","#66C2F5"))+
-                                geom_vline(aes(xintercept=.y$RMSEA_M[1],
-                                               linetype="misspec_sum$RMSEA_M[1]",color="misspec_sum$RMSEA_M[1]"),
+                                geom_vline(aes(xintercept=.y$RMSEA[1],
+                                               linetype="final$RMSEA[1]",color="final$RMSEA[1]"),
                                            size=.6)+
                                 geom_vline(aes(xintercept=.06,
                                                linetype=".06",color=".06"),
                                            size=.75)+
                                 scale_color_manual(name="Cutoff Values",
-                                                   labels=c("Dynamic Cutoff","Hu & Benter Cutoff"),
-                                                   values=c("misspec_sum$RMSEA_M[1]"="black",
+                                                   labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
+                                                   values=c("final$RMSEA[1]"="black",
                                                             ".06"="black"))+
                                 scale_linetype_manual(name="Cutoff Values",
-                                                      labels=c("Dynamic Cutoff","Hu & Benter Cutoff"),
-                                                      values=c("misspec_sum$RMSEA_M[1]"="longdash",
+                                                      labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
+                                                      values=c("final$RMSEA[1]"="longdash",
                                                                ".06"="dotted"))+
                                 theme(axis.title.y = element_blank(),
                                       axis.text.y = element_blank(),
@@ -311,23 +327,23 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500){
                                       legend.box = "vertical"))
 
     #Plot CFI. Need map2 and data=.x (can't remember why).
-    CFI_plot <- purrr::map2(plot,misspec_sum,~ggplot(data=.x,aes(x=CFI,fill=Model))+
+    CFI_plot <- purrr::map2(plot,final,~ggplot(data=.x,aes(x=CFI,fill=Model))+
                               geom_histogram(position="identity",
                                              alpha=.5, bins=30)+
                               scale_fill_manual(values=c("#E9798C","#66C2F5"))+
-                              geom_vline(aes(xintercept=.y$CFI_M[1],
-                                             linetype="misspec_sum$CFI_M[1]",color="misspec_sum$CFI_M[1]"),
+                              geom_vline(aes(xintercept=.y$CFI[1],
+                                             linetype="final$CFI[1]",color="final$CFI[1]"),
                                          size=.6)+
                               geom_vline(aes(xintercept=.95,
                                              linetype=".95",color=".95"),
                                          size=.75)+
                               scale_color_manual(name="Cutoff Values",
-                                                 labels=c("Dynamic Cutoff","Hu & Benter Cutoff"),
-                                                 values=c("misspec_sum$CFI_M[1]"="black",
+                                                 labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
+                                                 values=c("final$CFI[1]"="black",
                                                           ".95"="black"))+
                               scale_linetype_manual(name="Cutoff Values",
-                                                    labels=c("Dynamic Cutoff","Hu & Benter Cutoff"),
-                                                    values=c("misspec_sum$CFI_M[1]"="longdash",
+                                                    labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
+                                                    values=c("final$CFI[1]"="longdash",
                                                              ".95"="dotted"))+
                               theme(axis.title.y = element_blank(),
                                     axis.text.y = element_blank(),
@@ -338,19 +354,17 @@ cfaHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",reps=500){
                                     legend.title = element_blank(),
                                     legend.box = "vertical"))
 
-
     #Create a list with the plots combined for each severity level
-    plots_combo <- lapply(seq(length(plot)),function(x) c(SRMR_plot[x],RMSEA_plot[x],CFI_plot[x]))
+    plots_combo <- base::lapply(base::seq(base::length(plot)),function(x) c(SRMR_plot[x],RMSEA_plot[x],CFI_plot[x]))
 
     #Add a collective legend and title with the level indicator
-    plots <- lapply(seq(length(plots_combo)), function(x) patchwork::wrap_plots(plots_combo[[x]])+
-                      plot_layout(guides = "collect")+
-                      plot_annotation(title=paste("Level", x))
-                    & theme(legend.position = 'bottom'))
+    plots <- base::lapply(base::seq(base::length(plots_combo)), function(x) patchwork::wrap_plots(plots_combo[[x]])+
+                            plot_layout(guides = "collect")+
+                            plot_annotation(title=paste("Level", x))
+                          & theme(legend.position = 'bottom'))
 
     #Put into list
     res$plots <- plots
-
   }
 
   #Create object (necessary for subsequent print statement)
