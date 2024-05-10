@@ -33,7 +33,8 @@ Imports:
     rlang (>= 1.1.0),
     purrr (>= 0.3.3),
     Bayesrel (>= 0.7.7),
-    GenOrd (>= 1.3.0)
+    GenOrd (>= 1.3.0),
+    mirt (>= 1.35)
 Suggests: 
     knitr,
     rmarkdown
