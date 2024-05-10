@@ -5,11 +5,10 @@
 #' @importFrom lavaan lavaanify cfa fitMeasures
 #' @importFrom simstandard sim_standardized
 #' @importFrom purrr map map_dfr
-#' @import ggplot2
+#' @import ggplot2 GenOrd
 #' @importFrom stats quantile qnorm cov2cor density rbeta rnorm runif
 #' @importFrom semTools bsBootMiss
 #' @importFrom MASS mvrnorm
-#' @importFrom GenOrd ordcont
 
 ############################################################################
 ########################### Multiple Functions #############################
@@ -2847,13 +2846,13 @@ multi_fit_likert <- function(model,data, n,estimator,reps){
 
 
   #create empty matrix for proportions (g) and threshold (p)
-  g<-matrix(nrow=(max(data1)-min(data1)), ncol=ncol(data1))
+  g<-matrix(nrow=(max(data1,na.rm=T)-min(data1, na.rm=T)), ncol=ncol(data1))
   p<-g
 
   #loop through all variables in fitted model
   for (i in 1:ncol(data1)){
     #loop through all categories in fitted model
-    for (h in min(data1[,i]):(max(data1[,i])-1)){
+    for (h in min(data1[,i], na.rm=T):(max(data1[,i],na.rm=T)-1)){
       #proportion of responses at or below each category
       g[h,i]<-sum(table(data1[,i])[names(table(data1[,i]))<=h])/nrow(data1)
       #inverse standard normal to determine thresholds
@@ -2973,13 +2972,13 @@ true_fit_multi_likert <- function(model,data,n,estimator,reps){
   data1<-data1[rowSums(is.na(data1)) != ncol(data1), ]
 
   #create empty matrix for proportions (g) and threshold (p)
-  g<-matrix(nrow=(max(data1)-min(data1)), ncol=ncol(data1))
+  g<-matrix(nrow=(max(data1, na.rm=T)-min(data1, na.rm=T)), ncol=ncol(data1))
   p<-g
 
   #loop through all variables in fitted model
   for (i in 1:ncol(data1)){
     #loop through all categories in fitted model
-    for (h in min(data1[,i]):(max(data1[,i])-1)){
+    for (h in min(data1[,i], na.rm=T):(max(data1[,i], na.rm=T)-1)){
       #proportion of responses at or below each category
       g[h,i]<-sum(table(data1[,i])[names(table(data1[,i]))<=h])/nrow(data1)
       #inverse standard normal to determine thresholds
@@ -3107,13 +3106,13 @@ data_likert <- function(model,data, n,reps){
   data1<-data1[rowSums(is.na(data1)) != ncol(data1), ]
 
   #create empty matrix for proportions (g) and threshold (p)
-  g<-matrix(nrow=(max(data1)-min(data1)), ncol=ncol(data1))
+  g<-matrix(nrow=(max(data1, na.rm=T)-min(data1, na.rm=T)), ncol=ncol(data1))
   p<-g
 
   #loop through all variables in fitted model
   for (i in 1:ncol(data1)){
     #loop through all categories in fitted model
-    for (h in min(data1[,i]):(max(data1[,i])-1)){
+    for (h in min(data1[,i], na.rm=T):(max(data1[,i], na.rm=T)-1)){
       #proportion of responses at or below each category
       g[h,i]<-sum(table(data1[,i])[names(table(data1[,i]))<=h])/nrow(data1)
       #inverse standard normal to determine thresholds
