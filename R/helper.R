@@ -2863,6 +2863,12 @@ multi_fit_likert <- function(model,data, n,estimator,reps){
 
   colnames(dp)<-colnames(data1)
   a2<-colnames(dp)
+  
+  for (i in 1:ncol(data1)){
+    if(is.na(dp[1,i])){
+      dp[1:min(which(!is.na(dp[,i]))-1),i]=-10
+    }
+  }
 
 
   #loop through misspecifications
@@ -2989,8 +2995,14 @@ true_fit_multi_likert <- function(model,data,n,estimator,reps){
 
   colnames(dp)<-colnames(data1)
   a2<-colnames(dp)
-
-  for (i in 1:ncol(dp))
+  
+  for (i in 1:ncol(data1)){
+  if(is.na(dp[1,i])){
+  dp[1:min(which(!is.na(dp[,i]))-1),i]=-10
+  }
+  }
+  
+      for (i in 1:ncol(dp))
   {# first loop transforms highest category
     u<- as.numeric(sum(!is.na(dp[,i])))
     all_data_true<-all_data_true %>%
@@ -3013,7 +3025,7 @@ true_fit_multi_likert <- function(model,data,n,estimator,reps){
   #loops multiply by 100 to avoid overwriting MVN data with values above 1
   #divide by 100 to put things back onto Likert metric
   all_data_true<-all_data_true/100
-
+ 
   rep_id_true <- base::rep(1:r,n)
 
   #Combine indicator with dataset
@@ -3123,6 +3135,12 @@ data_likert <- function(model,data, n,reps){
 
   colnames(dp)<-colnames(data1)
   a2<-colnames(dp)
+  
+  for (i in 1:ncol(data1)){
+    if(is.na(dp[1,i])){
+      dp[1:min(which(!is.na(dp[,i]))-1),i]=-10
+    }
+  }
 
   for (i in 1:ncol(dp))
   {# first loop transforms highest category
@@ -3382,6 +3400,11 @@ true_fit_multi_likert2 <- function(model,data,n,estimator,reps){
     }
   }
 
+ # for (i in 1:ncol(data1)){
+ #    if(is.na(dp[1,i])){
+ #    dp[1:min(which(!is.na(dp[,i]))-1),i]=-10
+ #  }
+ # }
 
   #Assign column names so it's clear which thresholds go with which variable
   colnames(g)<-colnames(data1)

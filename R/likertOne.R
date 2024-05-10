@@ -381,8 +381,8 @@ likertOne <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",r
     bb$model<-c("Original Data")
     cc<-rbind(aa,bb)
 
-    dist<- ggplot()+  geom_histogram(data=cc,aes(x=value, y=..density.., fill=model), bins=(max(bb$value, na.rm=T)-min(bb$value, na.rm=T)),alpha=.3,position="identity") + facet_wrap(~key, scales = 'free_x')+
-      scale_colour_manual(values=c("#E9798C","#66C2F5")) +
+    dist<- ggplot()+  geom_bar(data=cc,aes(x=value, fill=model),alpha=.3,position="identity") + facet_wrap(~key, scales = 'free_x')+
+      scale_colour_manual(values=c("#E9798C","#66C2F5")) + scale_x_continuous(breaks=min(bb$value, na.rm=T):(max(bb$value, na.rm=T)))+
       theme(axis.title.y = element_blank(), axis.title.x=element_blank(),
             axis.text.y = element_blank(),
             axis.ticks.y = element_blank(),
