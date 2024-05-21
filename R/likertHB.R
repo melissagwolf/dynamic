@@ -394,7 +394,7 @@ likertHB <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",re
     #Put into list
     res$plots <- plots
 
-    dataMiss<-data_likert(model9, data, n, reps)
+    dataMiss<-data_likert(model9, data, n)
 
 
 

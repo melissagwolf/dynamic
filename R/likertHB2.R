@@ -196,14 +196,14 @@ likertHB2 <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",r
     fit[[i]]$S<-ifelse(fit[[i]]$SRMR_M >= fit[[i]]$SRMR_T, 1, 0)
     fit[[i]]$R<-ifelse(fit[[i]]$RMSEA_M >= fit[[i]]$RMSEA_T, 1, 0)
     fit[[i]]$C<-ifelse(fit[[i]]$CFI_M <= fit[[i]]$CFI_T, 1, 0)
-    S[[i]]<-subset(fit[[i]], subset=!duplicated(fit[[i]][('S')]), select=c("SRMR_M","Power","S")) %>% filter(S==1)
-    R[[i]]<-subset(fit[[i]], subset=!duplicated(fit[[i]][('R')]), select=c("RMSEA_M","Power","R")) %>% filter(R==1)
-    C[[i]]<-subset(fit[[i]], subset=!duplicated(fit[[i]][('C')]), select=c("CFI_M","Power","C"))  %>% filter(C==1)
+    S[[i]]<-subset(fit[[i]], subset=(!duplicated(fit[[i]][('S')])|fit[[i]][('Power')]==0), select=c("SRMR_M","Power","S")) %>% filter(S==1|Power==0)
+    R[[i]]<-subset(fit[[i]], subset=(!duplicated(fit[[i]][('R')])|fit[[i]][('Power')]==0), select=c("RMSEA_M","Power","R")) %>% filter(R==1|Power==0)
+    C[[i]]<-subset(fit[[i]], subset=(!duplicated(fit[[i]][('C')])|fit[[i]][('Power')]==0), select=c("CFI_M","Power","C"))  %>% filter(C==1|Power==0)
     colnames(S[[i]])<-c("SRMR","PowerS")
     colnames(R[[i]])<-c("RMSEA","PowerR")
     colnames(C[[i]])<-c("CFI","PowerC")
 
-    final[[i]]<-cbind(S[[i]],R[[i]],C[[i]])
+    final[[i]]<-cbind(S[[i]][1,],R[[i]][1,],C[[i]][1,])
     final[[i]]<-final[[i]][c("SRMR","PowerS","RMSEA","PowerR","CFI","PowerC")]
   }
 
@@ -395,9 +395,7 @@ likertHB2 <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",r
     #Put into list
     res$plots <- plots
 
-    dataMiss<-data_likert2(model9, data, n, reps)
-
-
+    dataMiss<-data_likert2(model9, data, n)
 
     aa<-tidyr::gather(dataMiss$sim)
     bb<-tidyr::gather(dataMiss$orig)
@@ -406,8 +404,8 @@ likertHB2 <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",r
     bb$model<-c("Original Data")
     cc<-rbind(aa,bb)
 
-    dist<- ggplot()+  geom_histogram(data=cc,aes(x=value, y=..density.., fill=model), bins=(max(bb$value, na.rm=T)-min(bb$value, na.rm=T)),alpha=.3,position="identity") + facet_wrap(~key, scales = 'free_x')+
-      scale_colour_manual(values=c("#E9798C","#66C2F5")) +
+    dist<- ggplot()+  geom_bar(data=cc,aes(x=value, fill=model),alpha=.3,position="identity") + facet_wrap(~key, scales = 'free_x')+
+      scale_colour_manual(values=c("#E9798C","#66C2F5")) + scale_x_continuous(breaks=min(bb$value, na.rm=T):(max(bb$value, na.rm=T)))+
       theme(axis.title.y = element_blank(), axis.title.x=element_blank(),
             axis.text.y = element_blank(),
             axis.ticks.y = element_blank(),

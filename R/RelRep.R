@@ -35,13 +35,25 @@
 #' # "Example" dataset has 12 items on a 1-5 Likert scale
 #'
 #' #Example using the first 8 items in "Example" for testing coefficient alpha with a 95% Bayes credible interval
-#' ex1<-RelRep(data=Example, items=c(names(Example[,1:8]), rel="alpha", method="CI"))
+#' ex1<-RelRep(data=Example,
+#' items=c("X1","X2","X3","X4","X5","X6","X7","X8"),
+#' rel="alpha",
+#' method="CI")
 #'
 #' #Example using odd items in "Example" to build a test interval that is .05 above and below coefficient omega
-#' ex2<-RelRep(data=Example, items=c("X1","X3","X5","X7","X9","X11"), rel="omega", method="width", width=.05)
+#' ex2<-RelRep(data=Example,
+#' items=c("X1","X3","X5","X7","X9","X11"),
+#' rel="omega",
+#' method="width",
+#' width=.05)
 #'
 #'#Example using even items in "Example" to specify a test interval for coefficient alpha between 0.70 and 0.80
-#' ex3<-RelRep(data=Example, items=c("X2","X4","X6","X8","X10","X12"), rel="alpha", method="raw", raw.low=.70, raw.high=.80)
+#' ex3<-RelRep(data=Example,
+#' items=c("X2","X4","X6","X8","X10","X12"),
+#' rel="alpha",
+#' method="raw",
+#' raw.low=.70,
+#' raw.high=.80)
 
 RelRep <- function(data, items=c(names(data)), rel="alpha", missing="NA", method="CI", width=NULL, raw.low=NULL, raw.high=NULL)
 {

@@ -2863,7 +2863,7 @@ multi_fit_likert <- function(model,data, n,estimator,reps){
 
   colnames(dp)<-colnames(data1)
   a2<-colnames(dp)
-  
+
   for (i in 1:ncol(data1)){
     if(is.na(dp[1,i])){
       dp[1:min(which(!is.na(dp[,i]))-1),i]=-10
@@ -2995,13 +2995,13 @@ true_fit_multi_likert <- function(model,data,n,estimator,reps){
 
   colnames(dp)<-colnames(data1)
   a2<-colnames(dp)
-  
+
   for (i in 1:ncol(data1)){
   if(is.na(dp[1,i])){
   dp[1:min(which(!is.na(dp[,i]))-1),i]=-10
   }
   }
-  
+
       for (i in 1:ncol(dp))
   {# first loop transforms highest category
     u<- as.numeric(sum(!is.na(dp[,i])))
@@ -3025,7 +3025,7 @@ true_fit_multi_likert <- function(model,data,n,estimator,reps){
   #loops multiply by 100 to avoid overwriting MVN data with values above 1
   #divide by 100 to put things back onto Likert metric
   all_data_true<-all_data_true/100
- 
+
   rep_id_true <- base::rep(1:r,n)
 
   #Combine indicator with dataset
@@ -3089,7 +3089,7 @@ multi_df_likert <- function(model,data,n,estimator,reps){
   return(Table)
 }
 
-data_likert <- function(model,data, n,reps){
+data_likert <- function(model,data, n){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -3106,7 +3106,7 @@ data_likert <- function(model,data, n,reps){
   r <- reps
 
   #Simulate one large dataset
-  all_data_true <- simstandard::sim_standardized(m=true_dgm,n = n*r,
+  all_data_true <- simstandard::sim_standardized(m=true_dgm,n = n,
                                                  latent = FALSE,
                                                  errors = FALSE)
 
@@ -3135,7 +3135,7 @@ data_likert <- function(model,data, n,reps){
 
   colnames(dp)<-colnames(data1)
   a2<-colnames(dp)
-  
+
   for (i in 1:ncol(data1)){
     if(is.na(dp[1,i])){
       dp[1:min(which(!is.na(dp[,i]))-1),i]=-10
@@ -3212,7 +3212,9 @@ multi_fit_likert2 <- function(model,data, n,estimator,reps){
   #will be scaled back at the end after loop indexes are not longer needed
   d2<-matrix(sapply(data1, function(x) min(x, na.rm=T)-1), nrow=1, ncol=ncol(data1))
   d3<-matrix(rep(d2,each=nrow(data1)), nrow=nrow(data1), ncol=ncol(data1))
+  d4<-matrix(rep(d2,each=nrow(data1)), nrow=r*nrow(data1), ncol=ncol(data1))
   colnames(d3)<-colnames(data1)
+  colnames(d4)<-colnames(data1)
   data1<-data1-d3
 
   #create empty matrix for proportions in each category (g)
@@ -3234,65 +3236,85 @@ multi_fit_likert2 <- function(model,data, n,estimator,reps){
     }
   }
 
+  #handle different number of categories per item
+  p1<-list()
+  for (x in 1:length(p)){
+    p1[[x]]<-p[[x]][!is.na(p[[x]])]
+  }
 
   #Assign column names so it's clear which thresholds go with which variable
   colnames(g)<-colnames(data1)
   colnames(dp)<-colnames(data1)
   a2<-colnames(g)
 
+  #misspecifications on observed scale
+  misspec_dgm <- DGM_Multi_HB(model)
+
+  #model-implied correlation after discretization
+  Miss_Cor <- purrr::map(misspec_dgm,~simstandard::get_model_implied_correlations(m=.,observed=TRUE,
+                                                                            latent=FALSE,errors=FALSE))
+
+  #simulate ordinal data and add d4 to scale back to original metric
+  set.seed(269854)
+  all_data_misspec <- purrr::map(Miss_Cor,~as.data.frame(GenOrd::ordsample(n=n*r, marginal=p1,Sigma=.)+d4))
+
   #calculate target matrix of fitted model
-  z<-GenOrd::ordcont(marginal=p,Sigma=a)
+  #z<-GenOrd::ordcont(marginal=p1,Sigma=a)
 
   #get estimates from target matrix
-  norm_model<-lavaan::cfa(model=mod, sample.cov=z$SigmaC, sample.nobs=n)
+  #norm_model<-lavaan::cfa(model=mod, sample.cov=z$SigmaC, sample.nobs=n)
 
   #Model statement for target matrix estimates
-  n_model<-cfa_lavmod(norm_model)
+  #n_model<-cfa_lavmod(norm_model)
 
   #find misspecifications on target matrix scale
-  misspec_dgm <- DGM_Multi_HB(n_model)
+  #misspec_dgm <- DGM_Multi_HB(n_model)
 
-  n <- min(n,2000)
+  #get model-implied correlation for misspecification on target matr
+  #all_data_misspec <- purrr::map(misspec_dgm,~simstandard::sim_standardized(m=.,n=n*r,
+    #                                                                        latent=FALSE,errors=FALSE))
+
+  #n <- min(n,2000)
 
   #Set seed
-  set.seed(269854)
+  #set.seed(269854)
 
   #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
-  r <- reps
+ # r <- reps
 
-  all_data_misspec <- purrr::map(misspec_dgm,~simstandard::sim_standardized(m=.,n=n*r,
-                                                                            latent=FALSE,errors=FALSE))
+  #all_data_misspec <- purrr::map(misspec_dgm,~simstandard::sim_standardized(m=.,n=n*r,
+      #                                                                      latent=FALSE,errors=FALSE))
 
   #Grab data level of the list
   #data <- purrr::map(misspec_data,2)
 
   #loop through misspecifications
-  for (x in 1:length(misspec_dgm))
-  {
-    for (i in 1:ncol(dp))
-    {# first loop transforms highest category
-      u<- as.numeric(sum(!is.na(dp[,i])))
-      all_data_misspec[[x]]<-all_data_misspec[[x]] %>%
-        dplyr::mutate(!!a2[i] := case_when(
-          !!rlang::sym(a2[i])  <= dp[1,i] ~100,
-          !!rlang::sym(a2[i]) >   dp[u,i] ~100*(u+1),
-          TRUE ~ !!rlang::sym(a2[i]))
-        )
+  #for (x in 1:length(misspec_dgm))
+ # {
+  #  for (i in 1:ncol(dp))
+   # {# first loop transforms highest category
+    #  u<- as.numeric(sum(!is.na(dp[,i])))
+     # all_data_misspec[[x]]<-all_data_misspec[[x]] %>%
+      #  dplyr::mutate(!!a2[i] := case_when(
+       #   !!rlang::sym(a2[i])  <= dp[1,i] ~100,
+        #  !!rlang::sym(a2[i]) >   dp[u,i] ~100*(u+1),
+         # TRUE ~ !!rlang::sym(a2[i]))
+        #)
       #second loop transforms all lower categories
-      if(sum(!is.na(dp[,i])) > 1){
-        for (j in 1:sum(!is.na(dp[,i]))) {
-          all_data_misspec[[x]]<-all_data_misspec[[x]] %>%
-            dplyr::mutate(!!a2[i] := case_when(
-              between( !!rlang::sym(a2[i]) , dp[j,i], dp[j+1,i]) ~ as.numeric(100*(j+1)),
-              TRUE~ !!rlang::sym(a2[i]))
-            )
-        }
-      }
-    }
+      #if(sum(!is.na(dp[,i])) > 1){
+       # for (j in 1:sum(!is.na(dp[,i]))) {
+        #  all_data_misspec[[x]]<-all_data_misspec[[x]] %>%
+         #   dplyr::mutate(!!a2[i] := case_when(
+          #    between( !!rlang::sym(a2[i]) , dp[j,i], dp[j+1,i]) ~ as.numeric(100*(j+1)),
+           #   TRUE~ !!rlang::sym(a2[i]))
+            #)
+        #}
+    #  }
+  #  }
     #loops multiply by 100 to avoid overwriting MVN data with values above 1
     #divide by 100 to put things back onto Likert metric
-    all_data_misspec[[x]]<-all_data_misspec[[x]]/100
-  }
+   # all_data_misspec[[x]]<-all_data_misspec[[x]]/100
+ # }
 
   #Create indicator to split into 500 datasets for 500 reps
   rep_id_misspec <- rep(1:r,n)
@@ -3378,10 +3400,12 @@ true_fit_multi_likert2 <- function(model,data,n,estimator,reps){
   #will be scaled back at the end after loop indexes are not longer needed
   d2<-matrix(sapply(data1, function(x) min(x, na.rm=T)-1), nrow=1, ncol=ncol(data1))
   d3<-matrix(rep(d2,each=nrow(data1)), nrow=nrow(data1), ncol=ncol(data1))
+  d4<-matrix(rep(d2,each=nrow(data1)), nrow=r*nrow(data1), ncol=ncol(data1))
   colnames(d3)<-colnames(data1)
+  colnames(d4)<-colnames(data1)
   data1<-data1-d3
 
-  #create empty matrix for proportions in each category (g)
+    #create empty matrix for proportions in each category (g)
   #GenOrd requires list (p) for each item
   #t is thresholds for eventual discretization
   g<-matrix(nrow=(max(data1,na.rm=T)-min(data1, na.rm=T)), ncol=ncol(data1))
@@ -3400,63 +3424,70 @@ true_fit_multi_likert2 <- function(model,data,n,estimator,reps){
     }
   }
 
- # for (i in 1:ncol(data1)){
- #    if(is.na(dp[1,i])){
- #    dp[1:min(which(!is.na(dp[,i]))-1),i]=-10
- #  }
- # }
+  #handle different number of categories per item
+  p1<-list()
+  for (x in 1:length(p)){
+  p1[[x]]<-p[[x]][!is.na(p[[x]])]
+  }
 
   #Assign column names so it's clear which thresholds go with which variable
   colnames(g)<-colnames(data1)
   colnames(dp)<-colnames(data1)
   a2<-colnames(g)
 
+
   #calculate target matrix of fitted model
-  z<-GenOrd::ordcont(marginal=p,Sigma=a)
-
-  #get estimates from target matrix
-  norm_model<-lavaan::cfa(model=mod, sample.cov=z$SigmaC, sample.nobs=n)
-
-  #Model statement for target matrix estimates
-  n_model<-cfa_lavmod(norm_model)
-
-  #Use max sample size of 10000
-  n <- base::min(n,2000)
+  #z<-GenOrd::ordcont(marginal=p1,Sigma=a)
 
   #Set Seed
   set.seed(326267)
+  #simultate ordinal data with same observed correlation matrix as observed data
+  all_data_true<-as.data.frame(GenOrd::ordsample(n=n*r, marginal=p1, Sigma=a)+d4)
+  #add d3 back to get original categories
+
+  #get estimates from target matrix
+  #norm_model<-lavaan::cfa(model=mod, sample.cov=z$SigmaC, sample.nobs=n)
+
+  #Model statement for target matrix estimates
+  #n_model<-cfa_lavmod(norm_model)
+
+  #Use max sample size of 10000
+  #n <- base::min(n,2000)
+
+  #Set Seed
+  #set.seed(326267)
 
   #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
-  r <- reps
+  #r <- reps
 
   #Simulate one large dataset
-  all_data_true <- simstandard::sim_standardized(m=n_model,n = n*r,
-                                                 latent = FALSE,
-                                                 errors = FALSE)
+  #all_data_true <- simstandard::sim_standardized(m=n_model,n = n*r,
+  #                                               latent = FALSE,
+  #                                               errors = FALSE)
 
-  for (i in 1:ncol(dp))
-  {# first loop transforms highest category
-    u<- as.numeric(sum(!is.na(dp[,i])))
-    all_data_true<-all_data_true %>%
-      dplyr::mutate(!!a2[i] := case_when(
-        !!rlang::sym(a2[i])  <= dp[1,i] ~100,
-        !!rlang::sym(a2[i]) >   dp[u,i] ~100*(u+1),
-        TRUE ~ !!rlang::sym(a2[i]))
-      )
+ # for (i in 1:ncol(dp))
+ #  {# first loop transforms highest category
+  #  u<- as.numeric(sum(!is.na(dp[,i])))
+   # all_data_true<-all_data_true %>%
+    #  dplyr::mutate(!!a2[i] := case_when(
+     #   !!rlang::sym(a2[i])  <= dp[1,i] ~100,
+      #  !!rlang::sym(a2[i]) >   dp[u,i] ~100*(u+1),
+       # TRUE ~ !!rlang::sym(a2[i]))
+      #)
     #second loop transforms all lower categories
-    if(sum(!is.na(dp[,i])) > 1){
-      for (j in 1:sum(!is.na(dp[,i]))) {
-        all_data_true<-all_data_true %>%
-          dplyr::mutate(!!a2[i] := case_when(
-            between( !!rlang::sym(a2[i]) , dp[j,i], dp[j+1,i]) ~ as.numeric(100*(j+1)),
-            TRUE~ !!rlang::sym(a2[i]))
-          )
-      }
-    }
-  }
+    #if(sum(!is.na(dp[,i])) > 1){
+      #for (j in 1:sum(!is.na(dp[,i]))) {
+        #all_data_true<-all_data_true %>%
+          #dplyr::mutate(!!a2[i] := case_when(
+            #between( !!rlang::sym(a2[i]) , dp[j,i], dp[j+1,i]) ~ as.numeric(100*(j+1)),
+            #TRUE~ !!rlang::sym(a2[i]))
+          #)
+      #}
+    #}
+  #}
   #loops multiply by 100 to avoid overwriting MVN data with values above 1
   #divide by 100 to put things back onto Likert metric
-  all_data_true<-all_data_true/100
+  #all_data_true<-all_data_true/100
 
   rep_id_true <- base::rep(1:r,n)
 
@@ -3517,7 +3548,7 @@ multi_df_likert2 <- function(model,data,n,estimator,reps){
   return(Table)
 }
 
-data_likert2 <- function(model,data, n,reps){
+data_likert2 <- function(model,data,n){
 
   mod <- cleanmodel(model)
 
@@ -3550,7 +3581,9 @@ data_likert2 <- function(model,data, n,reps){
   #will be scaled back at the end after loop indexes are not longer needed
   d2<-matrix(sapply(data1, function(x) min(x, na.rm=T)-1), nrow=1, ncol=ncol(data1))
   d3<-matrix(rep(d2,each=nrow(data1)), nrow=nrow(data1), ncol=ncol(data1))
+  #d4<-matrix(rep(d2,each=nrow(data1)), nrow=r*nrow(data1), ncol=ncol(data1))
   colnames(d3)<-colnames(data1)
+  #colnames(d4)<-colnames(data1)
   data1<-data1-d3
 
   #create empty matrix for proportions in each category (g)
@@ -3572,6 +3605,11 @@ data_likert2 <- function(model,data, n,reps){
     }
   }
 
+  #handle different number of categories per item
+  p1<-list()
+  for (x in 1:length(p)){
+    p1[[x]]<-p[[x]][!is.na(p[[x]])]
+  }
 
   #Assign column names so it's clear which thresholds go with which variable
   colnames(g)<-colnames(data1)
@@ -3579,56 +3617,18 @@ data_likert2 <- function(model,data, n,reps){
   a2<-colnames(g)
 
   #calculate target matrix of fitted model
-  z<-GenOrd::ordcont(marginal=p,Sigma=a)
-
-  #get estimates from target matrix
-  norm_model<-lavaan::cfa(model=mod, sample.cov=z$SigmaC, sample.nobs=n)
-
-  #Model statement for target matrix estimates
-  n_model<-cfa_lavmod(norm_model)
-
-  #Use max sample size of 10000
-  n <- base::min(n,2000)
+  #z<-GenOrd::ordcont(marginal=p1,Sigma=a)
 
   #Set Seed
   set.seed(326267)
-
-  #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
-  r <- reps
-
-  #Simulate one large dataset
-  all_data_true <- simstandard::sim_standardized(m=n_model,n = n*r,
-                                                 latent = FALSE,
-                                                 errors = FALSE)
-
-  for (i in 1:ncol(dp))
-  {# first loop transforms highest category
-    u<- as.numeric(sum(!is.na(dp[,i])))
-    all_data_true<-all_data_true %>%
-      dplyr::mutate(!!a2[i] := case_when(
-        !!rlang::sym(a2[i])  <= dp[1,i] ~100,
-        !!rlang::sym(a2[i]) >   dp[u,i] ~100*(u+1),
-        TRUE ~ !!rlang::sym(a2[i]))
-      )
-    #second loop transforms all lower categories
-    if(sum(!is.na(dp[,i])) > 1){
-      for (j in 1:sum(!is.na(dp[,i]))) {
-        all_data_true<-all_data_true %>%
-          dplyr::mutate(!!a2[i] := case_when(
-            between( !!rlang::sym(a2[i]) , dp[j,i], dp[j+1,i]) ~ as.numeric(100*(j+1)),
-            TRUE~ !!rlang::sym(a2[i]))
-          )
-      }
-    }
-  }
-  #loops multiply by 100 to avoid overwriting MVN data with values above 1
-  #divide by 100 to put things back onto Likert metric
-  all_data_true<-all_data_true/100
+  #simultate ordinal data with same observed correlation matrix as observed data
+  all_data_true<-as.data.frame(GenOrd::ordsample(n=n, marginal=p1, Sigma=a)+d3)
+  #add d3 back to get original categories
 
   miss_dat<-list()
 
   miss_dat$sim<-all_data_true
-  miss_dat$orig<-data1
+  miss_dat$orig<-data[,names]
 
   return(miss_dat)
 }
@@ -3798,13 +3798,13 @@ true_fit_one_likert <- function(model,data,n,estimator,reps){
   data1<-data1[rowSums(is.na(data1)) != ncol(data1), ]
 
   #create empty matrix for proportions (g) and threshold (p)
-  g<-matrix(nrow=(max(data1)-min(data1)), ncol=ncol(data1))
+  g<-matrix(nrow=(max(data1, na.rm=T)-min(data1, na.rm=T)), ncol=ncol(data1))
   p<-g
 
   #loop through all variables in fitted model
   for (i in 1:ncol(data1)){
     #loop through all categories in fitted model
-    for (h in min(data1[,i]):(max(data1[,i])-1)){
+    for (h in min(data1[,i], na.rm=T):(max(data1[,i], na.rm=T)-1)){
       #proportion of responses at or below each category
       g[h,i]<-sum(table(data1[,i])[names(table(data1[,i]))<=h])/nrow(data1)
       #inverse standard normal to determine thresholds

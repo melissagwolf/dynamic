@@ -195,15 +195,15 @@ res <- list()
 #lots of code here because fit indices are stored in a different location/under a different name depending on the estimator/correction
 if(!manual){
   if (model@Options$test=="satorra.bentler" |model@Options$test=="yuan.bentler.mplus" | model@Options$test=="yuan.bentler.mplus"){
-    fitted <- round(lavaan::fitmeasures(model,c("chisq.scaled","df","pvalue.scaled","srmr","rmsea.robust","cfi.robust")),3)
+    fitted <- round(lavaan::fitmeasures(model,c("chisq.scaled","df","pvalue.scaled","srmr","cfi.robust", "rmsea.robust","rmsea.ci.upper.robust")),3)
   } else if (model@Options$test=="scaled.shifted" | model@Options$test=="mean.var.adusted"){
-    fitted <- round(lavaan::fitmeasures(model,c("chisq.scaled","df","pvalue.scaled","srmr","rmsea.scaled","cfi.scaled")),3)
+    fitted <- round(lavaan::fitmeasures(model,c("chisq.scaled","df","pvalue.scaled","srmr","cfi.scaled", "rmsea.scaled","rmsea.ci.upper.scaled")),3)
   } else if(model@Options$test=="standard" ){
-    fitted <- round(lavaan::fitmeasures(model,c("chisq","df","pvalue","srmr","rmsea","cfi")),3)}
+    fitted <- round(lavaan::fitmeasures(model,c("chisq","df","pvalue","srmr","cfi", "rmsea","rmsea.ci.upper")),3)}
   fitted_m <- as.matrix(fitted)
   fitted_t <- t(fitted_m)
   fitted_t <- as.data.frame(fitted_t)
-  colnames(fitted_t) <- c("Chi-Square"," df","p-value","  SRMR","  RMSEA","   CFI")
+  colnames(fitted_t) <- c("Chi-Square"," df","p-value","  SRMR","   CFI","  RMSEA", "RMSEA 90% CI")
   rownames(fitted_t) <- c("")
   res$fit <- fitted_t
 }

@@ -370,9 +370,7 @@ likertOne <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",r
     #Put into list
     res$plots <- plots
 
-    dataMiss<-data_likert(model9, data, n, reps)
-
-
+    dataMiss<-data_likert(model9, data, n)
 
     aa<-tidyr::gather(dataMiss$sim)
     bb<-tidyr::gather(dataMiss$orig)
