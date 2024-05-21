@@ -3103,7 +3103,6 @@ data_likert <- function(model,data, n){
   set.seed(326267)
 
   #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
-  r <- reps
 
   #Simulate one large dataset
   all_data_true <- simstandard::sim_standardized(m=true_dgm,n = n,
