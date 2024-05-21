@@ -196,7 +196,7 @@ res <- list()
 if(!manual){
   if (model@Options$test=="satorra.bentler" |model@Options$test=="yuan.bentler.mplus" | model@Options$test=="yuan.bentler.mplus"){
     fitted <- round(lavaan::fitmeasures(model,c("chisq.scaled","df","pvalue.scaled","srmr","cfi.robust", "rmsea.robust","rmsea.ci.upper.robust")),3)
-  } else if (model@Options$test=="scaled.shifted" | model@Options$test=="mean.var.adusted"){
+  } else if (model@Options$test=="scaled.shifted" | model@Options$test=="mean.var.adjusted"){
     fitted <- round(lavaan::fitmeasures(model,c("chisq.scaled","df","pvalue.scaled","srmr","cfi.scaled", "rmsea.scaled","rmsea.ci.upper.scaled")),3)
   } else if(model@Options$test=="standard" ){
     fitted <- round(lavaan::fitmeasures(model,c("chisq","df","pvalue","srmr","cfi", "rmsea","rmsea.ci.upper")),3)}
