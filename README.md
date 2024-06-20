@@ -25,7 +25,7 @@ issues on GitHub. You can install the released version of dynamic from
 `install.packages("dynamic")`
 
 **Currently, the functions for categorical data (`catOne` and `catHB`),
-non-normal continuous data (`nnorOne` and `nnorHB`), and Likert data
+non-normal continuous data (`nnorOne` and `nnorHB`), and Likert data treated as continuous
 (`likertOne` and `likertHB`) are only available from the GitHub package
 and are not yet available on CRAN or the Shiny application.**
 
