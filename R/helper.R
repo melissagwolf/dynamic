@@ -4087,6 +4087,7 @@ miss_fit <- function(model,data,n,reps,estimator,MAD,scale){
       }
     }
 
+
     #calculate EM mean/cov?
     dummymod<-sem(mod,meanstructure=T,data=data[,colnames(a)],missing="ML",do.fit=F)
     #em<-lavInspect(dummymod,what="sampstat")
