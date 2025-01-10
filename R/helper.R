@@ -4055,7 +4055,6 @@ miss_fit <- function(model,data,n,reps,estimator,MAD,scale){
     unique<-lengths(lapply(data[,colnames(a)], unique))
     #flag any variable with between 2 and 7 categories are categorical/Likert
     probLik <- (1< unique & unique <10)
-
     probLik1 <- t(as.data.frame(unique[probLik]))
     #save names of likely categorical/likert variables (to be transformed later)
     likertnames<-colnames(probLik1)
