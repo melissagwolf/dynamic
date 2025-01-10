@@ -4051,7 +4051,7 @@ miss_fit <- function(model,data,n,reps,estimator,MAD,scale){
 
   #if scale="nonnormal", used Fleishman method using original data to get skew and kurtosis
   if (scale %in% c("nonnormal")){
-
+    set.seed(97)
     unique<-lengths(lapply(data[,colnames(a)], unique))
     #flag any variable with between 2 and 7 categories are categorical/Likert
     probLik <- (1< unique & unique <10)
@@ -4417,7 +4417,7 @@ true_fit<- function(model,data,n,reps, estimator, MAD,scale){
   }
 
   if (scale %in% c("nonnormal")){
-
+    set.seed(649364)
     unique<-lengths(lapply(data[,colnames(a)], unique))
     #flag any variable with between 2 and 7 categories are categorical/Likert
     probLik <- (1< unique & unique <10)
