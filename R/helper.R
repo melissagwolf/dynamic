@@ -4055,10 +4055,11 @@ miss_fit <- function(model,data,n,reps,estimator,MAD,scale){
     unique<-lengths(lapply(data[,colnames(a)], unique))
     #flag any variable with between 2 and 7 categories are categorical/Likert
     probLik <- (1< unique & unique <10)
+    #if probLik == 
     probLik1 <- t(as.data.frame(unique[probLik]))
     #save names of likely categorical/likert variables (to be transformed later)
     likertnames<-colnames(probLik1)
-
+    if (!is.null(likertnames)){
     #create empty matrix for proportions in each category,g
     g<-list()
     #data only with discrete items
@@ -4085,7 +4086,7 @@ miss_fit <- function(model,data,n,reps,estimator,MAD,scale){
         g[[i]][h+1]<-sum(table(data1[,i])[names(table(data1[,i]))<=h])/sum(!is.na(data1[,i]))
       }
     }
-
+    }
 
     #calculate EM mean/cov?
     dummymod<-sem(mod,meanstructure=T,data=data[,colnames(a)],missing="ML",do.fit=F)
