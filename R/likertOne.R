@@ -286,11 +286,11 @@ likertOne <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",r
                                               linetype=".08",color=".08"),
                                           size=.75)+
                                scale_color_manual(name="Cutoff Values",
-                                                  labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
+                                                  labels=c("Hu & Bentler Cutoff","Dynamic Cutoff"),
                                                   values=c("final$SRMR[1]"="black",
                                                            ".08"="black"))+
                                scale_linetype_manual(name="Cutoff Values",
-                                                     labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
+                                                     labels=c("Hu & Bentler Cutoff","Dynamic Cutoff"),
                                                      values=c("final$SRMR[1]"="longdash",
                                                               ".08"="dotted"))+
                                theme(axis.title.y = element_blank(),
@@ -314,11 +314,11 @@ likertOne <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",r
                                                linetype=".06",color=".06"),
                                            size=.75)+
                                 scale_color_manual(name="Cutoff Values",
-                                                   labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
+                                                   labels=c("Hu & Bentler Cutoff","Dynamic Cutoff"),
                                                    values=c("final$RMSEA[1]"="black",
                                                             ".06"="black"))+
                                 scale_linetype_manual(name="Cutoff Values",
-                                                      labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
+                                                      labels=c("Hu & Bentler Cutoff","Dynamic Cutoff"),
                                                       values=c("final$RMSEA[1]"="longdash",
                                                                ".06"="dotted"))+
                                 theme(axis.title.y = element_blank(),
@@ -342,11 +342,11 @@ likertOne <- function(model,data,n=NULL,plot=FALSE,manual=FALSE,estimator="ML",r
                                              linetype=".95",color=".95"),
                                          size=.75)+
                               scale_color_manual(name="Cutoff Values",
-                                                 labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
+                                                 labels=c("Hu & Bentler Cutoff","Dynamic Cutoff"),
                                                  values=c("final$CFI[1]"="black",
                                                           ".95"="black"))+
                               scale_linetype_manual(name="Cutoff Values",
-                                                    labels=c("Hu & Benter Cutoff","Dynamic Cutoff"),
+                                                    labels=c("Hu & Bentler Cutoff","Dynamic Cutoff"),
                                                     values=c("final$CFI[1]"="longdash",
                                                              ".95"="dotted"))+
                               theme(axis.title.y = element_blank(),
