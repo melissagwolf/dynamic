@@ -4051,38 +4051,39 @@ miss_fit <- function(model,data,n,reps,estimator,MAD,scale){
 
   #if scale="nonnormal", used Fleishman method using original data to get skew and kurtosis
   if (scale %in% c("nonnormal")){
-
+    set.seed(97)
     unique<-lengths(lapply(data[,colnames(a)], unique))
     #flag any variable with between 2 and 7 categories are categorical/Likert
     probLik <- (1< unique & unique <10)
     probLik1 <- t(as.data.frame(unique[probLik]))
     #save names of likely categorical/likert variables (to be transformed later)
     likertnames<-colnames(probLik1)
+    if (!is.null(likertnames)){
+      #create empty matrix for proportions in each category,g
+      g<-list()
+      #data only with discrete items
+      data1<-data[,likertnames]
 
-    #create empty matrix for proportions in each category,g
-    g<-list()
-    #data only with discrete items
-    data1<-data[,likertnames]
+      #rescale so that minimum value is always ==1
+      #needed to properly index computations below
+      #will be scaled back at the end after loop indexes are not longer needed
+      d2<-matrix(sapply(data1, function(x) min(x, na.rm=T)-1), nrow=1, ncol=ncol(data1))
+      d3<-matrix(rep(d2,each=nrow(data1)), nrow=nrow(data1), ncol=ncol(data1))
+      d3l<-matrix(rep(d2,each=(r*nrow(data1))), nrow=(r*nrow(data1)), ncol=ncol(data1))
+      colnames(d3)<-colnames(data1)
+      colnames(d3l)<-colnames(data1)
+      data1<-data1-d3
 
-    #rescale so that minimum value is always ==1
-    #needed to properly index computations below
-    #will be scaled back at the end after loop indexes are not longer needed
-    d2<-matrix(sapply(data1, function(x) min(x, na.rm=T)-1), nrow=1, ncol=ncol(data1))
-    d3<-matrix(rep(d2,each=nrow(data1)), nrow=nrow(data1), ncol=ncol(data1))
-    d3l<-matrix(rep(d2,each=(r*nrow(data1))), nrow=(r*nrow(data1)), ncol=ncol(data1))
-    colnames(d3)<-colnames(data1)
-    colnames(d3l)<-colnames(data1)
-    data1<-data1-d3
-
-    #loop through all discrete variables in fitted model
-    for (i in 1:length(likertnames)){
-      #setup list element of all 0s, to be replaced
-      g1<-rep(0,max(data1[,i], na.rm=T)-1)
-      g[[i]]<-g1
-      #loop through all categories for each varaible
-      for (h in (min(data1[,i], na.rm=T)-1):(max(data1[,i], na.rm=T))){
-        #proportion of responses at or below each category, only count non-missing in the denominator
-        g[[i]][h+1]<-sum(table(data1[,i])[names(table(data1[,i]))<=h])/sum(!is.na(data1[,i]))
+      #loop through all discrete variables in fitted model
+      for (i in 1:length(likertnames)){
+        #setup list element of all 0s, to be replaced
+        g1<-rep(0,max(data1[,i], na.rm=T)-1)
+        g[[i]]<-g1
+        #loop through all categories for each varaible
+        for (h in (min(data1[,i], na.rm=T)-1):(max(data1[,i], na.rm=T))){
+          #proportion of responses at or below each category, only count non-missing in the denominator
+          g[[i]][h+1]<-sum(table(data1[,i])[names(table(data1[,i]))<=h])/sum(!is.na(data1[,i]))
+        }
       }
     }
 
@@ -4142,7 +4143,9 @@ miss_fit <- function(model,data,n,reps,estimator,MAD,scale){
         }
 
         #add d3 back to put categorical items onto original scale
-        d[,likertnames]<- d[,likertnames]+d3[,likertnames]
+        if (!is.null(likertnames)){
+         d[,likertnames]<- d[,likertnames]+d3[,likertnames]
+        }
         #save data
         D[[i]]<-as.data.frame(d)
         D[[i]]$rep<-i
@@ -4414,41 +4417,41 @@ true_fit<- function(model,data,n,reps, estimator, MAD,scale){
   }
 
   if (scale %in% c("nonnormal")){
-
+    set.seed(649364)
     unique<-lengths(lapply(data[,colnames(a)], unique))
     #flag any variable with between 2 and 7 categories are categorical/Likert
     probLik <- (1< unique & unique <10)
     probLik1 <- t(as.data.frame(unique[probLik]))
     #save names of likely categorical/likert variables (to be transformed later)
     likertnames<-colnames(probLik1)
+    if (!is.null(likertnames)){
+      #create empty matrix for proportions in each category,g
+      g<-list()
+      #data only with discrete items
+      data1<-data[,likertnames]
 
-    #create empty matrix for proportions in each category,g
-    g<-list()
-    #data only with discrete items
-    data1<-data[,likertnames]
+      #rescale so that minimum value is always ==1
+      #needed to properly index computations below
+      #will be scaled back at the end after loop indexes are not longer needed
+      d2<-matrix(sapply(data1, function(x) min(x, na.rm=T)-1), nrow=1, ncol=ncol(data1))
+      d3<-matrix(rep(d2,each=nrow(data1)), nrow=nrow(data1), ncol=ncol(data1))
+      d3l<-matrix(rep(d2,each=(r*nrow(data1))), nrow=(r*nrow(data1)), ncol=ncol(data1))
+      colnames(d3)<-colnames(data1)
+      colnames(d3l)<-colnames(data1)
+      data1<-data1-d3
 
-    #rescale so that minimum value is always ==1
-    #needed to properly index computations below
-    #will be scaled back at the end after loop indexes are not longer needed
-    d2<-matrix(sapply(data1, function(x) min(x, na.rm=T)-1), nrow=1, ncol=ncol(data1))
-    d3<-matrix(rep(d2,each=nrow(data1)), nrow=nrow(data1), ncol=ncol(data1))
-    d3l<-matrix(rep(d2,each=(r*nrow(data1))), nrow=(r*nrow(data1)), ncol=ncol(data1))
-    colnames(d3)<-colnames(data1)
-    colnames(d3l)<-colnames(data1)
-    data1<-data1-d3
-
-    #loop through all discrete variables in fitted model
-    for (i in 1:length(likertnames)){
-      #setup list element of all 0s, to be replaced
-      g1<-rep(0,max(data1[,i], na.rm=T)-1)
-      g[[i]]<-g1
-      #loop through all categories for each varaible
-      for (h in (min(data1[,i], na.rm=T)-1):(max(data1[,i], na.rm=T))){
-        #proportion of responses at or below each category, only count non-missing in the denominator
-        g[[i]][h+1]<-sum(table(data1[,i])[names(table(data1[,i]))<=h])/sum(!is.na(data1[,i]))
+      #loop through all discrete variables in fitted model
+      for (i in 1:length(likertnames)){
+        #setup list element of all 0s, to be replaced
+        g1<-rep(0,max(data1[,i], na.rm=T)-1)
+        g[[i]]<-g1
+        #loop through all categories for each varaible
+        for (h in (min(data1[,i], na.rm=T)-1):(max(data1[,i], na.rm=T))){
+          #proportion of responses at or below each category, only count non-missing in the denominator
+          g[[i]][h+1]<-sum(table(data1[,i])[names(table(data1[,i]))<=h])/sum(!is.na(data1[,i]))
+        }
       }
     }
-
     dummymod<-sem(mod,meanstructure=T,data=data[,colnames(a)],missing="ML",do.fit=F)
     em<-lavInspect(dummymod,what="sampstat")
     mu<-em$mean[colnames(a)]
