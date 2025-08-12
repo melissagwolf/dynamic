@@ -18,19 +18,27 @@ value1<-density<-disc<-l<-value<-xx<-rand<-..density..<-NULL
 
 #### Function to create model statement without numbers from user model (for input) ####
 #Copy from OG
-  cleanmodel <- function(model){
-
-    suppressMessages(model %>%
-                       lavaan::lavaanify(fixed.x = FALSE) %>%
-                       dplyr::filter(lhs != rhs) %>%
-                       dplyr::filter(op != "~1") %>%
-                       dplyr::filter(op != "|") %>%
-                       dplyr::group_by(lhs,op) %>%
-                       dplyr::reframe(rhs = paste(rhs, collapse = " + ")) %>%
-                       dplyr::arrange(dplyr::desc(op)) %>%
-                       tidyr::unite("l", lhs, op, rhs, sep = " ") %>%
-                       dplyr::pull(l))
-  }
+cleanmodel <- function(model){
+  # First, get a complete table of the model syntax
+  lav_info <- lavaan::lavaanify(model, fixed.x = FALSE)
+  
+  # Identify the names of ALL latent variables in the model
+  lv_names <- unique(lav_info$lhs[lav_info$op == "=~"])
+  
+  # Now, process the table
+  suppressMessages(
+    lav_info %>%
+      dplyr::filter(!(op == "~~" & lhs %in% lv_names & rhs %in% lv_names)) %>%
+      dplyr::filter(lhs != rhs) %>%
+      dplyr::filter(op != "~1") %>%
+      dplyr::filter(op != "|") %>%
+      dplyr::group_by(lhs, op) %>%
+      dplyr::reframe(rhs = paste(rhs, collapse = " + ")) %>%
+      dplyr::arrange(dplyr::desc(op)) %>%
+      tidyr::unite("l", lhs, op, rhs, sep = " ") %>%
+      dplyr::pull(l)
+  )
+}
 
 #### Function for Number of Factors ####
 #Copy from OG
@@ -598,9 +606,61 @@ multi_num_HB <- function(model){
   return(itemoptions)
 }
 
+# This function creates misspecifications for bifactor models
+# by adding residual covariances between items on the same specific factor.
+multi_add_bifactor_misspec <- function(model){
+  
+  lav_file <- lavaan::lavaanify(model, fixed.x = FALSE) %>%
+    dplyr::filter(lhs != rhs, op == "=~")
+  
+  # Identify the general factor (assumed to be the one with the most items)
+  general_factor <- lav_file %>%
+    dplyr::count(lhs, sort = TRUE) %>%
+    dplyr::slice(1) %>%
+    dplyr::pull(lhs)
+  
+  # Get items belonging to each *specific* factor
+  specific_factor_items <- lav_file %>%
+    dplyr::filter(lhs != general_factor) %>%
+    dplyr::group_by(lhs)
+  
+  # Find pairs of items within each specific factor to correlate
+  items_to_correlate <- specific_factor_items %>%
+    dplyr::slice(1:2) %>%
+    dplyr::summarise(items = list(rhs), .groups = 'drop') %>%
+    dplyr::filter(lengths(items) > 1) # Ensure we have at least a pair
+  
+  if (nrow(items_to_correlate) == 0) {
+    stop("dynamic Error: Could not find item pairs within specific factors to create misspecifications.")
+  }
+  
+  # Create the misspecification statements
+  Residual_Correlation <- items_to_correlate %>%
+    dplyr::mutate(
+      item1 = sapply(items, `[`, 1),
+      item2 = sapply(items, `[`, 2),
+      cor = .3,
+      opp = "~~",
+      star = "*"
+    ) %>%
+    tidyr::unite(V1, c("item1", "opp", "cor", "star", "item2"), sep = " ") %>%
+    dplyr::select(V1)
+  
+  return(Residual_Correlation)
+}
+
 #### Multi-Factor: Function to identify available items and loading magnitude ####
 
 multi_add_HB <- function(model){
+  
+  # For complex/bi-factor solutions 
+  lav_file_check <- lavaan::lavaanify(model, fixed.x = FALSE) %>%
+    dplyr::filter(lhs != rhs, op == "=~")
+  item_loadings_count <- lav_file_check %>% dplyr::group_by(rhs) %>% dplyr::tally()
+  is_bifactor_or_complex <- any(item_loadings_count$n > 1)
+  if (is_bifactor_or_complex) {
+    return(as.data.frame(multi_add_bifactor_misspec(model)))
+  }
 
   #read in the model
   Mod_C <- model
