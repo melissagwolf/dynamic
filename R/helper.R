@@ -21,10 +21,10 @@ value1<-density<-disc<-l<-value<-xx<-rand<-..density..<-NULL
 cleanmodel <- function(model){
   # First, get a complete table of the model syntax
   lav_info <- lavaan::lavaanify(model, fixed.x = FALSE)
-  
+
   # Identify the names of ALL latent variables in the model
   lv_names <- unique(lav_info$lhs[lav_info$op == "=~"])
-  
+
   # Now, process the table
   suppressMessages(
     lav_info %>%
@@ -609,31 +609,31 @@ multi_num_HB <- function(model){
 # This function creates misspecifications for bifactor models
 # by adding residual covariances between items on the same specific factor.
 multi_add_bifactor_misspec <- function(model){
-  
+
   lav_file <- lavaan::lavaanify(model, fixed.x = FALSE) %>%
     dplyr::filter(lhs != rhs, op == "=~")
-  
+
   # Identify the general factor (assumed to be the one with the most items)
   general_factor <- lav_file %>%
     dplyr::count(lhs, sort = TRUE) %>%
     dplyr::slice(1) %>%
     dplyr::pull(lhs)
-  
+
   # Get items belonging to each *specific* factor
   specific_factor_items <- lav_file %>%
     dplyr::filter(lhs != general_factor) %>%
     dplyr::group_by(lhs)
-  
+
   # Find pairs of items within each specific factor to correlate
   items_to_correlate <- specific_factor_items %>%
     dplyr::slice(1:2) %>%
     dplyr::summarise(items = list(rhs), .groups = 'drop') %>%
     dplyr::filter(lengths(items) > 1) # Ensure we have at least a pair
-  
+
   if (nrow(items_to_correlate) == 0) {
     stop("dynamic Error: Could not find item pairs within specific factors to create misspecifications.")
   }
-  
+
   # Create the misspecification statements
   Residual_Correlation <- items_to_correlate %>%
     dplyr::mutate(
@@ -645,15 +645,29 @@ multi_add_bifactor_misspec <- function(model){
     ) %>%
     tidyr::unite(V1, c("item1", "opp", "cor", "star", "item2"), sep = " ") %>%
     dplyr::select(V1)
-  
+
   return(Residual_Correlation)
 }
 
 #### Multi-Factor: Function to identify available items and loading magnitude ####
 
 multi_add_HB <- function(model){
-  
-  # For complex/bi-factor solutions 
+
+  # First, check if the model is hierarchical. A model is hierarchical if one of its
+  # latent variables is also used as indicator for another latent variable.
+  lav_info_check <- lavaan::lavaanify(model, fixed.x = FALSE)
+  latent_vars <- unique(lav_info_check$lhs[lav_info_check$op == "=~"])
+  indicators <- unique(lav_info_check$rhs[lav_info_check$op == "=~"])
+  is_hierarchical <- any(latent_vars %in% indicators)
+
+  if (is_hierarchical) {
+    # If the model is hierarchical, this is the wrong function.
+    # Immediately delegate to the correct function (multi_add_hier) and exit. Uncomment the line below if user should be informed.
+    # message("-> Note: Hierarchical model detected. Rerouting from multi_add_HB to multi_add_hier().")
+    return(multi_add_hier(model))
+  }
+
+  # For complex/bi-factor solutions
   lav_file_check <- lavaan::lavaanify(model, fixed.x = FALSE) %>%
     dplyr::filter(lhs != rhs, op == "=~")
   item_loadings_count <- lav_file_check %>% dplyr::group_by(rhs) %>% dplyr::tally()
@@ -788,7 +802,6 @@ multi_add_HB <- function(model){
   #return value to append to model statement
   return(Cross_Loading)
 }
-
 
 #### Multi-factor: Function to create Misspecified DGM given the number of factors ####
 
@@ -2152,7 +2165,7 @@ one_fit_cat <- function(model,n,reps,threshold, estimator){
   set.seed(NULL)
 
   return(misspec_fit_sum)
-  }
+}
 
 #simulates MVN data, but then bins it based on thresholds
 true_fit_one_cat <- function(model,n,reps, threshold, estimator){
@@ -2212,7 +2225,7 @@ true_fit_one_cat <- function(model,n,reps, threshold, estimator){
     tidyr::nest() %>%
     base::as.list()
 
-   #create character vector listing categorical items
+  #create character vector listing categorical items
   clist<-cat_items(threshold)[,1]
 
   se<-ifelse(startsWith(estimator,"ULS"),"robust.sem","none")
@@ -2240,7 +2253,7 @@ true_fit_one_cat <- function(model,n,reps, threshold, estimator){
   set.seed(NULL)
 
   return(true_fit_sum)
-  }
+}
 
 one_df_cat <- function(model,n,reps,threshold, estimator){
 
@@ -3057,12 +3070,12 @@ true_fit_multi_likert <- function(model,data,n,estimator,reps){
   a2<-colnames(dp)
 
   for (i in 1:ncol(data1)){
-  if(is.na(dp[1,i])){
-  dp[1:min(which(!is.na(dp[,i]))-1),i]=-10
-  }
+    if(is.na(dp[1,i])){
+      dp[1:min(which(!is.na(dp[,i]))-1),i]=-10
+    }
   }
 
-      for (i in 1:ncol(dp))
+  for (i in 1:ncol(dp))
   {# first loop transforms highest category
     u<- as.numeric(sum(!is.na(dp[,i])))
     all_data_true<-all_data_true %>%
@@ -3311,7 +3324,7 @@ multi_fit_likert2 <- function(model,data, n,estimator,reps){
 
   #model-implied correlation after discretization
   Miss_Cor <- purrr::map(misspec_dgm,~simstandard::get_model_implied_correlations(m=.,observed=TRUE,
-                                                                            latent=FALSE,errors=FALSE))
+                                                                                  latent=FALSE,errors=FALSE))
 
   #simulate ordinal data and add d4 to scale back to original metric
   set.seed(269854)
@@ -3331,7 +3344,7 @@ multi_fit_likert2 <- function(model,data, n,estimator,reps){
 
   #get model-implied correlation for misspecification on target matr
   #all_data_misspec <- purrr::map(misspec_dgm,~simstandard::sim_standardized(m=.,n=n*r,
-    #                                                                        latent=FALSE,errors=FALSE))
+  #                                                                        latent=FALSE,errors=FALSE))
 
   #n <- min(n,2000)
 
@@ -3339,41 +3352,41 @@ multi_fit_likert2 <- function(model,data, n,estimator,reps){
   #set.seed(269854)
 
   #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
- # r <- reps
+  # r <- reps
 
   #all_data_misspec <- purrr::map(misspec_dgm,~simstandard::sim_standardized(m=.,n=n*r,
-      #                                                                      latent=FALSE,errors=FALSE))
+  #                                                                      latent=FALSE,errors=FALSE))
 
   #Grab data level of the list
   #data <- purrr::map(misspec_data,2)
 
   #loop through misspecifications
   #for (x in 1:length(misspec_dgm))
- # {
+  # {
   #  for (i in 1:ncol(dp))
-   # {# first loop transforms highest category
-    #  u<- as.numeric(sum(!is.na(dp[,i])))
-     # all_data_misspec[[x]]<-all_data_misspec[[x]] %>%
-      #  dplyr::mutate(!!a2[i] := case_when(
-       #   !!rlang::sym(a2[i])  <= dp[1,i] ~100,
-        #  !!rlang::sym(a2[i]) >   dp[u,i] ~100*(u+1),
-         # TRUE ~ !!rlang::sym(a2[i]))
-        #)
-      #second loop transforms all lower categories
-      #if(sum(!is.na(dp[,i])) > 1){
-       # for (j in 1:sum(!is.na(dp[,i]))) {
-        #  all_data_misspec[[x]]<-all_data_misspec[[x]] %>%
-         #   dplyr::mutate(!!a2[i] := case_when(
-          #    between( !!rlang::sym(a2[i]) , dp[j,i], dp[j+1,i]) ~ as.numeric(100*(j+1)),
-           #   TRUE~ !!rlang::sym(a2[i]))
-            #)
-        #}
-    #  }
+  # {# first loop transforms highest category
+  #  u<- as.numeric(sum(!is.na(dp[,i])))
+  # all_data_misspec[[x]]<-all_data_misspec[[x]] %>%
+  #  dplyr::mutate(!!a2[i] := case_when(
+  #   !!rlang::sym(a2[i])  <= dp[1,i] ~100,
+  #  !!rlang::sym(a2[i]) >   dp[u,i] ~100*(u+1),
+  # TRUE ~ !!rlang::sym(a2[i]))
+  #)
+  #second loop transforms all lower categories
+  #if(sum(!is.na(dp[,i])) > 1){
+  # for (j in 1:sum(!is.na(dp[,i]))) {
+  #  all_data_misspec[[x]]<-all_data_misspec[[x]] %>%
+  #   dplyr::mutate(!!a2[i] := case_when(
+  #    between( !!rlang::sym(a2[i]) , dp[j,i], dp[j+1,i]) ~ as.numeric(100*(j+1)),
+  #   TRUE~ !!rlang::sym(a2[i]))
+  #)
+  #}
   #  }
-    #loops multiply by 100 to avoid overwriting MVN data with values above 1
-    #divide by 100 to put things back onto Likert metric
-   # all_data_misspec[[x]]<-all_data_misspec[[x]]/100
- # }
+  #  }
+  #loops multiply by 100 to avoid overwriting MVN data with values above 1
+  #divide by 100 to put things back onto Likert metric
+  # all_data_misspec[[x]]<-all_data_misspec[[x]]/100
+  # }
 
   #Create indicator to split into 500 datasets for 500 reps
   rep_id_misspec <- rep(1:r,n)
@@ -3464,7 +3477,7 @@ true_fit_multi_likert2 <- function(model,data,n,estimator,reps){
   colnames(d4)<-colnames(data1)
   data1<-data1-d3
 
-    #create empty matrix for proportions in each category (g)
+  #create empty matrix for proportions in each category (g)
   #GenOrd requires list (p) for each item
   #t is thresholds for eventual discretization
   g<-matrix(nrow=(max(data1,na.rm=T)-min(data1, na.rm=T)), ncol=ncol(data1))
@@ -3486,7 +3499,7 @@ true_fit_multi_likert2 <- function(model,data,n,estimator,reps){
   #handle different number of categories per item
   p1<-list()
   for (x in 1:length(p)){
-  p1[[x]]<-p[[x]][!is.na(p[[x]])]
+    p1[[x]]<-p[[x]][!is.na(p[[x]])]
   }
 
   #Assign column names so it's clear which thresholds go with which variable
@@ -3524,25 +3537,25 @@ true_fit_multi_likert2 <- function(model,data,n,estimator,reps){
   #                                               latent = FALSE,
   #                                               errors = FALSE)
 
- # for (i in 1:ncol(dp))
- #  {# first loop transforms highest category
+  # for (i in 1:ncol(dp))
+  #  {# first loop transforms highest category
   #  u<- as.numeric(sum(!is.na(dp[,i])))
-   # all_data_true<-all_data_true %>%
-    #  dplyr::mutate(!!a2[i] := case_when(
-     #   !!rlang::sym(a2[i])  <= dp[1,i] ~100,
-      #  !!rlang::sym(a2[i]) >   dp[u,i] ~100*(u+1),
-       # TRUE ~ !!rlang::sym(a2[i]))
-      #)
-    #second loop transforms all lower categories
-    #if(sum(!is.na(dp[,i])) > 1){
-      #for (j in 1:sum(!is.na(dp[,i]))) {
-        #all_data_true<-all_data_true %>%
-          #dplyr::mutate(!!a2[i] := case_when(
-            #between( !!rlang::sym(a2[i]) , dp[j,i], dp[j+1,i]) ~ as.numeric(100*(j+1)),
-            #TRUE~ !!rlang::sym(a2[i]))
-          #)
-      #}
-    #}
+  # all_data_true<-all_data_true %>%
+  #  dplyr::mutate(!!a2[i] := case_when(
+  #   !!rlang::sym(a2[i])  <= dp[1,i] ~100,
+  #  !!rlang::sym(a2[i]) >   dp[u,i] ~100*(u+1),
+  # TRUE ~ !!rlang::sym(a2[i]))
+  #)
+  #second loop transforms all lower categories
+  #if(sum(!is.na(dp[,i])) > 1){
+  #for (j in 1:sum(!is.na(dp[,i]))) {
+  #all_data_true<-all_data_true %>%
+  #dplyr::mutate(!!a2[i] := case_when(
+  #between( !!rlang::sym(a2[i]) , dp[j,i], dp[j+1,i]) ~ as.numeric(100*(j+1)),
+  #TRUE~ !!rlang::sym(a2[i]))
+  #)
+  #}
+  #}
   #}
   #loops multiply by 100 to avoid overwriting MVN data with values above 1
   #divide by 100 to put things back onto Likert metric
@@ -4204,7 +4217,7 @@ miss_fit <- function(model,data,n,reps,estimator,MAD,scale){
 
         #add d3 back to put categorical items onto original scale
         if (!is.null(likertnames)){
-         d[,likertnames]<- d[,likertnames]+d3[,likertnames]
+          d[,likertnames]<- d[,likertnames]+d3[,likertnames]
         }
         #save data
         D[[i]]<-as.data.frame(d)
@@ -4225,7 +4238,7 @@ miss_fit <- function(model,data,n,reps,estimator,MAD,scale){
     }
   }
 
-    #if scale="categorical", use data to figure out which variables are discrete and what proportions should be
+  #if scale="categorical", use data to figure out which variables are discrete and what proportions should be
   if (scale %in% c("categorical")){
 
     mu=rep(0,l)
