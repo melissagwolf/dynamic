@@ -15,7 +15,17 @@
 #' If you manually entered standardized loadings and sample size, set this to TRUE.
 #' @param reps The number of replications used in your simulation. This is set to 500 by default in both the
 #' R package and the corresponding Shiny App.
-#' @param estimator Which estimator to use within the simulations (enter in quotes). The default is WLSMV. Only limited-information estimators that produce fit indices are permitted (i.e., maximum likelihood is not available)
+#' @param estimator Which estimator to use within the simulations (enter in quotes). The default is WLSMV. Only limited-information estimators that produce fit indices are permitted (i.e., maximum likelihood is not available).
+#' @param robust A logical flag. When set to \code{TRUE}, the function will extract and report the \code{.robust}
+#' fit indices (e.g., \code{rmsea.robust}, \code{cfi.robust}) from \code{lavaan} simulations. This is highly recommended
+#' when using the \code{WLSMV} estimator to ensure the use of appropriate fit statistics corrected for non-normality,
+#' as justified by the work of Brosseau-Liard, Savalei, & Li (2012) and Brosseau-Liard & Savalei (2014).
+#' When \code{FALSE} (the default), the function retains its original behavior, which may report \code{.scaled} fit indices for certain estimators.
+#'
+#' @references
+#' Brosseau-Liard, P. E., Savalei, V., & Li, L. (2012). An Investigation of the Sample Performance of Two Nonnormality Corrections for RMSEA. \emph{Multivariate Behavioral Research}, 47(6), 904-930.
+#'
+#' Brosseau-Liard, P. E., & Savalei, V. (2014). Adjusting Incremental Fit Indices for Nonnormality. \emph{Multivariate Behavioral Research}, 49(5), 460-470.
 #'
 #' @import dplyr lavaan simstandard ggplot2 stringr rlang
 #' @importFrom purrr map map_dfr map2
@@ -107,7 +117,7 @@
 #' \donttest{catHB(model=manual_model,n=500,manual=TRUE)}
 #'
 
-catHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLSMV"){
+catHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLSMV",robust=FALSE){
   #If manual, expect manual (a la Shiny app)
   if(manual){
 
@@ -184,36 +194,93 @@ catHB <- function(model,n=NULL,plot=FALSE,manual=FALSE,reps=250, estimator="WLSM
   #Will ignore in print statement if manual=T
   #Exclamation point is how we indicate if manual = T (because default is F)
 
+
   if(!manual){
-    if (model@Options$test=="satorra.bentler" |model@Options$test=="yuan.bentler.mplus" | model@Options$test=="yuan.bentler.mplus"){
-      fitted <- round(lavaan::fitmeasures(model,c("chisq.scaled","df","pvalue.scaled","srmr","rmsea.robust","cfi.robust")),3)
-    } else if (model@Options$test=="scaled.shifted" | model@Options$test=="mean.var.adusted"){
-      fitted <- round(lavaan::fitmeasures(model,c("chisq","df","pvalue","srmr","rmsea.scaled","cfi.scaled")),3)
-    } else if(model@Options$test=="standard" ){
-      fitted <- round(lavaan::fitmeasures(model,c("chisq","df","pvalue","srmr","rmsea","cfi")),3)}
-    fitted_m <- as.matrix(fitted)
-    fitted_t <- t(fitted_m)
-    fitted_t <- as.data.frame(fitted_t)
-    colnames(fitted_t) <- c("Chi-Square"," df","p-value","  SRMR","  RMSEA","   CFI")
+    # This block now builds the fit table piece-by-piece to avoid lavaan errors.
+
+    # Initialize an empty list to store the results
+    fit_list <- list()
+
+    # Conditional logic for printing empirical fit indices
+    if (!is.null(robust) && robust == TRUE) {
+      # We now check for DWLS, which is lavaan's internal name for WLSMV.
+      if (model@Options$estimator %in% c("WLSMV", "ULSMV", "DWLS") || model@Options$test %in% c("satorra.bentler", "yuan.bentler.mplus")) {
+        fit_list$chisq  <- fitMeasures(model, "chisq.scaled")
+        fit_list$df     <- fitMeasures(model, "df.scaled")
+        fit_list$pvalue <- fitMeasures(model, "pvalue.scaled")
+        fit_list$srmr   <- fitMeasures(model, "srmr")
+        fit_list$rmsea  <- fitMeasures(model, "rmsea.robust")
+        fit_list$cfi    <- fitMeasures(model, "cfi.robust")
+
+      } else if (model@Options$test %in% c("scaled.shifted", "mean.var.adjusted")) {
+        fit_list$chisq  <- fitMeasures(model, "chisq.scaled")
+        fit_list$df     <- fitMeasures(model, "df.scaled")
+        fit_list$pvalue <- fitMeasures(model, "pvalue.scaled")
+        fit_list$srmr   <- fitMeasures(model, "srmr")
+        fit_list$rmsea  <- fitMeasures(model, "rmsea.scaled")
+        fit_list$cfi    <- fitMeasures(model, "cfi.scaled")
+
+      } else if (model@Options$test == "standard") {
+        fit_list$chisq  <- fitMeasures(model, "chisq")
+        fit_list$df     <- fitMeasures(model, "df")
+        fit_list$pvalue <- fitMeasures(model, "pvalue")
+        fit_list$srmr   <- fitMeasures(model, "srmr")
+        fit_list$rmsea  <- fitMeasures(model, "rmsea")
+        fit_list$cfi    <- fitMeasures(model, "cfi")
+      }
+
+    } else {
+      if (model@Options$test=="satorra.bentler" | model@Options$test=="yuan.bentler.mplus"){
+        fit_list$chisq  <- fitMeasures(model, "chisq.scaled")
+        fit_list$df     <- fitMeasures(model, "df")
+        fit_list$pvalue <- fitMeasures(model, "pvalue.scaled")
+        fit_list$srmr   <- fitMeasures(model, "srmr")
+        fit_list$rmsea  <- fitMeasures(model, "rmsea.robust")
+        fit_list$cfi    <- fitMeasures(model, "cfi.robust")
+
+      } else if (model@Options$test=="scaled.shifted" | model@Options$test=="mean.var.adjusted" | model@Options$test=="mean.var.adusted"){
+        fit_list$chisq  <- fitMeasures(model, "chisq")
+        fit_list$df     <- fitMeasures(model, "df")
+        fit_list$pvalue <- fitMeasures(model, "pvalue")
+        fit_list$srmr   <- fitMeasures(model, "srmr")
+        fit_list$rmsea  <- fitMeasures(model, "rmsea.scaled")
+        fit_list$cfi    <- fitMeasures(model, "cfi.scaled")
+
+      } else if(model@Options$test=="standard" ){
+        fit_list$chisq  <- fitMeasures(model, "chisq")
+        fit_list$df     <- fitMeasures(model, "df")
+        fit_list$pvalue <- fitMeasures(model, "pvalue")
+        fit_list$srmr   <- fitMeasures(model, "srmr")
+        fit_list$rmsea  <- fitMeasures(model, "rmsea")
+        fit_list$cfi    <- fitMeasures(model, "cfi")
+      }
+    }
+
+    # Unlist the collected values into a single vector
+    fitted_vals <- unlist(fit_list)
+
+    # Create the final data frame for printing
+    fitted_t <- as.data.frame(t(round(fitted_vals, 3)))
+    colnames(fitted_t) <- c("Chi-Square", "df", "p-value", "SRMR", "RMSEA", "CFI")
     rownames(fitted_t) <- c("")
     res$fit <- fitted_t
   }
 
   #Run simulation
-  results <- multi_df_HB_cat(model9,n,reps, threshold,estimator) #ADD THRESHOLD ARGUMENT HERE, PASSED FROM ABOVE
+  results <- multi_df_HB_cat(model9,n,reps, threshold,estimator, robust = robust)#ADD THRESHOLD ARGUMENT HERE, PASSED FROM ABOVE
 
   #Save the data and make it exportable
   res$data <- fit_data(results)
 
   #For each list element (misspecification) compute the cutoffs
   misspec_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_M=stats::quantile(SRMR_M, c(seq(0.05,1,0.01))),
-                                                      RMSEA_M=stats::quantile(RMSEA_M, c(seq(0.05,1,0.01))),
-                                                      CFI_M=stats::quantile(CFI_M, c(seq(0.95,0,-0.01)))))
+                                                    RMSEA_M=stats::quantile(RMSEA_M, c(seq(0.05,1,0.01))),
+                                                    CFI_M=stats::quantile(CFI_M, c(seq(0.95,0,-0.01)))))
 
   #For the true model, compute the cutoffs (these will all be the same - just need in list form)
   true_sum <- purrr::map(results,~dplyr::reframe(.,SRMR_T=stats::quantile(SRMR_T, c(.95)),
-                                                   RMSEA_T=stats::quantile(RMSEA_T, c(.95)),
-                                                   CFI_T=stats::quantile(CFI_T, c(.05))))
+                                                 RMSEA_T=stats::quantile(RMSEA_T, c(.95)),
+                                                 CFI_T=stats::quantile(CFI_T, c(.05))))
 
   #create lists for each fit index and a final table
   fit<-list()

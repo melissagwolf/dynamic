@@ -18,19 +18,27 @@ value1<-density<-disc<-l<-value<-xx<-rand<-..density..<-NULL
 
 #### Function to create model statement without numbers from user model (for input) ####
 #Copy from OG
-  cleanmodel <- function(model){
+cleanmodel <- function(model){
+  # First, get a complete table of the model syntax
+  lav_info <- lavaan::lavaanify(model, fixed.x = FALSE)
 
-    suppressMessages(model %>%
-                       lavaan::lavaanify(fixed.x = FALSE) %>%
-                       dplyr::filter(lhs != rhs) %>%
-                       dplyr::filter(op != "~1") %>%
-                       dplyr::filter(op != "|") %>%
-                       dplyr::group_by(lhs,op) %>%
-                       dplyr::reframe(rhs = paste(rhs, collapse = " + ")) %>%
-                       dplyr::arrange(dplyr::desc(op)) %>%
-                       tidyr::unite("l", lhs, op, rhs, sep = " ") %>%
-                       dplyr::pull(l))
-  }
+  # Identify the names of ALL latent variables in the model
+  lv_names <- unique(lav_info$lhs[lav_info$op == "=~"])
+
+  # Now, process the table
+  suppressMessages(
+    lav_info %>%
+      dplyr::filter(!(op == "~~" & lhs %in% lv_names & rhs %in% lv_names)) %>%
+      dplyr::filter(lhs != rhs) %>%
+      dplyr::filter(op != "~1") %>%
+      dplyr::filter(op != "|") %>%
+      dplyr::group_by(lhs, op) %>%
+      dplyr::reframe(rhs = paste(rhs, collapse = " + ")) %>%
+      dplyr::arrange(dplyr::desc(op)) %>%
+      tidyr::unite("l", lhs, op, rhs, sep = " ") %>%
+      dplyr::pull(l)
+  )
+}
 
 #### Function for Number of Factors ####
 #Copy from OG
@@ -361,7 +369,7 @@ DGM_one <- function(model){
 
 ### One-factor: Simulate fit indices for misspecified model for all levels ###
 
-one_fit <- function(model,n,estimator,reps){
+one_fit <- function(model,n,estimator,reps,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -398,12 +406,31 @@ one_fit <- function(model,n,estimator,reps){
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      # This block correctly handles estimators that produce .scaled outputs:
+      # - MLMVS, WLSMVS (Yuan-Bentler scaled-shifted)
+      # - MLMV (Satorra-Bentler mean- and variance-adjusted for continuous data)
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      # This block correctly handles estimators that produce .robust outputs:
+      # - MLM, WLSM (Satorra-Bentler mean-adjusted)
+      # - MLR (Yuan-Bentler robust)
+      # - WLSMV, ULSMV (Satorra-Bentler mean- and variance-adjusted for categorical data)
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      # Handles standard, uncorrected estimators (ML, WLS, ULS)
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa for each element in the list
@@ -433,7 +460,7 @@ one_fit <- function(model,n,estimator,reps){
 
 #### One_Factor: Function to create True DGM (aka, just the model the user read in) ####
 
-true_fit_one <- function(model,n,estimator,reps){
+true_fit_one <- function(model,n,estimator,reps,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -468,12 +495,23 @@ true_fit_one <- function(model,n,estimator,reps){
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa
@@ -499,16 +537,16 @@ true_fit_one <- function(model,n,estimator,reps){
 
 #### One-Factor: Function to combine both model fit stats for all levels into one dataframe ####
 
-one_df <- function(model,n,estimator,reps){
+one_df <- function(model,n,estimator,reps,robust=FALSE){
 
   #Use max sample size of 2000
   n <- min(n,2000)
 
   #Get fit stats for misspecified model
-  misspec_fit <- one_fit(model,n,estimator,reps)
+  misspec_fit <- one_fit(model,n,estimator,reps, robust=robust)
 
-  #Get fit stats for correctly specified model
-  true_fit <- true_fit_one(model,n,estimator,reps)
+  #Get fit stats for correctly spzzzecified model
+  true_fit <- true_fit_one(model,n,estimator,reps, robust=robust)
 
   #Produce final table by level
   Table <- purrr::map(misspec_fit,~cbind(.,true_fit))
@@ -759,7 +797,7 @@ DGM_Multi_HB <- function(model){
 
 ### Multi-factor: Simulate fit indices for misspecified model for all levels ###
 
-multi_fit_HB <- function(model,n,estimator,reps){
+multi_fit_HB <- function(model,n,estimator,reps,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -796,12 +834,23 @@ multi_fit_HB <- function(model,n,estimator,reps){
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa for each element in the list
@@ -830,7 +879,7 @@ multi_fit_HB <- function(model,n,estimator,reps){
 
 #### Multi_Factor: Function to create True DGM (aka, just the model the user read in) ####
 
-true_fit_HB <- function(model,n,estimator,reps){
+true_fit_HB <- function(model,n,estimator,reps,robust=FALSE){
 
   #Can make this faster by only doing it once
   #Would need to change table. Not sure what would happen to plot.
@@ -870,12 +919,23 @@ true_fit_HB <- function(model,n,estimator,reps){
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa
@@ -901,16 +961,16 @@ true_fit_HB <- function(model,n,estimator,reps){
 
 #### Multi-Factor: Function to combine both model fit stats for all levels into one dataframe ####
 
-multi_df_HB <- function(model,n,estimator,reps){
+multi_df_HB <- function(model,n,estimator,reps,robust=FALSE){
 
   #Use max sample size of 2000
   n <- min(n,2000)
 
   #Get fit stats for misspecified model
-  misspec_fit <- multi_fit_HB(model,n,estimator,reps)
+  misspec_fit <- multi_fit_HB(model,n,estimator,reps, robust=robust)
 
   #Get fit stats for correctly specified model
-  true_fit <- true_fit_HB(model,n,estimator,reps)
+  true_fit <- true_fit_HB(model,n,estimator,reps, robust=robust)
 
   #Produce final table of fit indices for each level (as a list)
   Table <- purrr::map(misspec_fit,~cbind(.,true_fit))
@@ -1406,7 +1466,7 @@ DGM_Multi_hier <- function(model){
 
 ### Hierarchical: Simulate fit indices for misspecified model for all levels ###
 
-multi_fit_hier <- function(model,n,estimator,reps){
+multi_fit_hier <- function(model,n,estimator,reps,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -1442,12 +1502,23 @@ multi_fit_hier <- function(model,n,estimator,reps){
   data <- purrr::map(misspec_data,2)
 
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa for each element in the list
@@ -1478,7 +1549,7 @@ multi_fit_hier <- function(model,n,estimator,reps){
 
 #### Hierarchical: Function to create True DGM (aka, just the model the user read in) ####
 
-true_fit_hier <- function(model,n,estimator,reps){
+true_fit_hier <- function(model,n,estimator,reps,robust=FALSE){
 
   #Can make this faster by only doing it once
   #Would need to change table. Not sure what would happen to plot.
@@ -1518,12 +1589,23 @@ true_fit_hier <- function(model,n,estimator,reps){
 
 
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa
@@ -1549,16 +1631,16 @@ true_fit_hier <- function(model,n,estimator,reps){
 
 #### Hierarchical: Function to combine both model fit stats for all levels into one dataframe ####
 
-multi_df_hier <- function(model,n,estimator,reps){
+multi_df_hier <- function(model,n,estimator,reps,robust=FALSE){
 
   #Use max sample size of 2000
   n <- min(n,2000)
 
   #Get fit stats for misspecified model
-  misspec_fit <- multi_fit_hier(model,n,estimator,reps)
+  misspec_fit <- multi_fit_hier(model,n,estimator,reps, robust=robust)
 
   #Get fit stats for correctly specified model
-  true_fit <- true_fit_hier(model,n,estimator,reps)
+  true_fit <- true_fit_hier(model,n,estimator,reps, robust=robust)
 
   #Produce final table of fit indices for each level (as a list)
   Table <- purrr::map(misspec_fit,~cbind(.,true_fit))
@@ -1752,7 +1834,7 @@ DGM_one_hier2 <- function(model){
 
 ### Hierarchical2: Simulate fit indices for misspecified model for all levels ###
 
-one_fit_hier2 <- function(model,n,estimator,reps){
+one_fit_hier2 <- function(model,n,estimator,reps,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -1789,12 +1871,23 @@ one_fit_hier2 <- function(model,n,estimator,reps){
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa for each element in the list
@@ -1824,7 +1917,7 @@ one_fit_hier2 <- function(model,n,estimator,reps){
 
 #### Hierarchical2: Function to create True DGM (aka, just the model the user read in) ####
 
-true_fit_one_hier2 <- function(model,n,estimator,reps){
+true_fit_one_hier2 <- function(model,n,estimator,reps,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -1859,12 +1952,23 @@ true_fit_one_hier2 <- function(model,n,estimator,reps){
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa
@@ -1890,16 +1994,16 @@ true_fit_one_hier2 <- function(model,n,estimator,reps){
 
 #### Hierarchical2: Function to combine both model fit stats for all levels into one dataframe ####
 
-one_df_hier2 <- function(model,n,estimator,reps){
+one_df_hier2 <- function(model,n,estimator,reps,robust=FALSE){
 
   #Use max sample size of 2000
   n <- min(n,2000)
 
   #Get fit stats for misspecified model
-  misspec_fit <- one_fit_hier2(model,n,estimator,reps)
+  misspec_fit <- one_fit_hier2(model,n,estimator,reps, robust=robust)
 
   #Get fit stats for correctly specified model
-  true_fit <- true_fit_one_hier2(model,n,estimator,reps)
+  true_fit <- true_fit_one_hier2(model,n,estimator,reps, robust=robust)
 
   #Produce final table by level
   Table <- purrr::map(misspec_fit,~cbind(.,true_fit))
@@ -1995,7 +2099,7 @@ th2<-function(threshold){
   return(a2)
 }
 
-one_fit_cat <- function(model,n,reps,threshold, estimator){
+one_fit_cat <- function(model,n,reps,threshold, estimator,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -2063,12 +2167,23 @@ one_fit_cat <- function(model,n,reps,threshold, estimator){
   clist<-cat_items(threshold)[,1]
 
   se<-ifelse(startsWith(estimator,"ULS"),"robust.sem","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa
@@ -2092,10 +2207,10 @@ one_fit_cat <- function(model,n,reps,threshold, estimator){
   set.seed(NULL)
 
   return(misspec_fit_sum)
-  }
+}
 
 #simulates MVN data, but then bins it based on thresholds
-true_fit_one_cat <- function(model,n,reps, threshold, estimator){
+true_fit_one_cat <- function(model,n,reps, threshold, estimator,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -2152,16 +2267,27 @@ true_fit_one_cat <- function(model,n,reps, threshold, estimator){
     tidyr::nest() %>%
     base::as.list()
 
-   #create character vector listing categorical items
+  #create character vector listing categorical items
   clist<-cat_items(threshold)[,1]
 
   se<-ifelse(startsWith(estimator,"ULS"),"robust.sem","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa
@@ -2180,18 +2306,18 @@ true_fit_one_cat <- function(model,n,reps, threshold, estimator){
   set.seed(NULL)
 
   return(true_fit_sum)
-  }
+}
 
-one_df_cat <- function(model,n,reps,threshold, estimator){
+one_df_cat <- function(model,n,reps,threshold, estimator,robust=FALSE){
 
   #Use max sample size of 2000
   n <- min(n,2000)
 
   #Get fit stats for misspecified model
-  misspec_fit <- one_fit_cat(model,n,reps, threshold,estimator)
+  misspec_fit <- one_fit_cat(model,n,reps, threshold,estimator, robust=robust)
 
   #Get fit stats for correctly specified model
-  true_fit <- true_fit_one_cat(model,n,reps, threshold,estimator)
+  true_fit <- true_fit_one_cat(model,n,reps, threshold,estimator, robust=robust)
 
   #Produce final table by level
   Table <- purrr::map(misspec_fit,~cbind(.,true_fit))
@@ -2204,7 +2330,7 @@ one_df_cat <- function(model,n,reps,threshold, estimator){
 ################# catHB ##########################
 ##################################################
 
-multi_fit_HB_cat <- function(model,n,reps, threshold, estimator){
+multi_fit_HB_cat <- function(model,n,reps, threshold, estimator,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -2268,12 +2394,23 @@ multi_fit_HB_cat <- function(model,n,reps, threshold, estimator){
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
   se<-ifelse(startsWith(estimator,"ULS"),"robust.sem","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa for each element in the list
@@ -2301,7 +2438,7 @@ multi_fit_HB_cat <- function(model,n,reps, threshold, estimator){
 
 }
 
-true_fit_HB_cat <- function(model,n,reps, threshold, estimator){
+true_fit_HB_cat <- function(model,n,reps, threshold, estimator,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -2363,12 +2500,23 @@ true_fit_HB_cat <- function(model,n,reps, threshold, estimator){
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
   se<-ifelse(startsWith(estimator,"ULS"),"robust.sem","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa
@@ -2395,16 +2543,16 @@ true_fit_HB_cat <- function(model,n,reps, threshold, estimator){
 
 #### Multi-Factor: Function to combine both model fit stats for all levels into one dataframe ####
 
-multi_df_HB_cat <- function(model,n,reps, threshold,estimator){
+multi_df_HB_cat <- function(model,n,reps, threshold,estimator,robust=FALSE){
 
   #Use max sample size of 2000
   n <- min(n,2000)
 
   #Get fit stats for misspecified model
-  misspec_fit <- multi_fit_HB_cat(model,n,reps,threshold, estimator)
+  misspec_fit <- multi_fit_HB_cat(model,n,reps,threshold, estimator, robust=robust)
 
   #Get fit stats for correctly specified model
-  true_fit <- true_fit_HB_cat(model,n,reps,threshold, estimator)
+  true_fit <- true_fit_HB_cat(model,n,reps,threshold, estimator, robust=robust)
 
   #Produce final table of fit indices for each level (as a list)
   Table <- purrr::map(misspec_fit,~cbind(.,true_fit))
@@ -2418,7 +2566,7 @@ multi_df_HB_cat <- function(model,n,reps, threshold,estimator){
 ##################################################
 
 ### One-factor: Simulate fit indices for misspecified model for all levels ###
-one_fit_nnor <- function(model,data, n,estimator,reps){
+one_fit_nnor <- function(model,data, n,estimator,reps,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -2462,12 +2610,23 @@ one_fit_nnor <- function(model,data, n,estimator,reps){
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa for each element in the list
@@ -2497,7 +2656,7 @@ one_fit_nnor <- function(model,data, n,estimator,reps){
 
 #### One_Factor: Function to create True DGM (aka, just the model the user read in) ####
 
-true_fit_one_nnor <- function(model,data,n,estimator,reps){
+true_fit_one_nnor <- function(model,data,n,estimator,reps,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -2535,12 +2694,23 @@ true_fit_one_nnor <- function(model,data,n,estimator,reps){
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa
@@ -2566,16 +2736,16 @@ true_fit_one_nnor <- function(model,data,n,estimator,reps){
 
 #### One-Factor: Function to combine both model fit stats for all levels into one dataframe ####
 
-one_df_nnor <- function(model,data,n,estimator,reps){
+one_df_nnor <- function(model,data,n,estimator,reps,robust=FALSE){
 
   #Use max sample size of 2000
   n <- min(n,2000)
 
   #Get fit stats for misspecified model
-  misspec_fit <- one_fit_nnor(model,data,n,estimator,reps)
+  misspec_fit <- one_fit_nnor(model,data,n,estimator,reps, robust=robust)
 
   #Get fit stats for correctly specified model
-  true_fit <- true_fit_one_nnor(model,data,n,estimator,reps)
+  true_fit <- true_fit_one_nnor(model,data,n,estimator,reps, robust=robust)
 
   #Produce final table by level
   Table <- purrr::map(misspec_fit,~cbind(.,true_fit))
@@ -2636,7 +2806,7 @@ data_nnor <- function(model,data, n,reps){
 ##################################################
 
 ### multi-factor: Simulate fit indices for misspecified model for all levels ###
-multi_fit_nnor <- function(model,data, n,estimator,reps){
+multi_fit_nnor <- function(model,data, n,estimator,reps,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -2684,12 +2854,23 @@ multi_fit_nnor <- function(model,data, n,estimator,reps){
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa for each element in the list
@@ -2719,7 +2900,7 @@ multi_fit_nnor <- function(model,data, n,estimator,reps){
 
 #### multi_Factor: Function to create True DGM (aka, just the model the user read in) ####
 
-true_fit_multi_nnor <- function(model,data,n,estimator,reps){
+true_fit_multi_nnor <- function(model,data,n,estimator,reps,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -2759,12 +2940,23 @@ true_fit_multi_nnor <- function(model,data,n,estimator,reps){
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa
@@ -2790,16 +2982,16 @@ true_fit_multi_nnor <- function(model,data,n,estimator,reps){
 
 #### multi-Factor: Function to combine both model fit stats for all levels into one dataframe ####
 
-multi_df_nnor <- function(model,data,n,estimator,reps){
+multi_df_nnor <- function(model,data,n,estimator,reps,robust=FALSE){
 
   #Use max sample size of 2000
   n <- min(n,2000)
 
   #Get fit stats for misspecified model
-  misspec_fit <- multi_fit_nnor(model,data,n,estimator,reps)
+  misspec_fit <- multi_fit_nnor(model,data,n,estimator,reps, robust=robust)
 
   #Get fit stats for correctly specified model
-  true_fit <- true_fit_multi_nnor(model,data,n,estimator,reps)
+  true_fit <- true_fit_multi_nnor(model,data,n,estimator,reps, robust=robust)
 
   #Produce final table by level
   Table <- purrr::map(misspec_fit,~cbind(.,true_fit))
@@ -2814,7 +3006,7 @@ multi_df_nnor <- function(model,data,n,estimator,reps){
 ##################################################
 
 
-multi_fit_likert <- function(model,data, n,estimator,reps){
+multi_fit_likert <- function(model,data, n,estimator,reps,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -2914,12 +3106,23 @@ multi_fit_likert <- function(model,data, n,estimator,reps){
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa for each element in the list
@@ -2949,7 +3152,7 @@ multi_fit_likert <- function(model,data, n,estimator,reps){
 
 #### multi_Factor: Function to create True DGM (aka, just the model the user read in) ####
 
-true_fit_multi_likert <- function(model,data,n,estimator,reps){
+true_fit_multi_likert <- function(model,data,n,estimator,reps,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -2997,12 +3200,12 @@ true_fit_multi_likert <- function(model,data,n,estimator,reps){
   a2<-colnames(dp)
 
   for (i in 1:ncol(data1)){
-  if(is.na(dp[1,i])){
-  dp[1:min(which(!is.na(dp[,i]))-1),i]=-10
-  }
+    if(is.na(dp[1,i])){
+      dp[1:min(which(!is.na(dp[,i]))-1),i]=-10
+    }
   }
 
-      for (i in 1:ncol(dp))
+  for (i in 1:ncol(dp))
   {# first loop transforms highest category
     u<- as.numeric(sum(!is.na(dp[,i])))
     all_data_true<-all_data_true %>%
@@ -3040,12 +3243,23 @@ true_fit_multi_likert <- function(model,data,n,estimator,reps){
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa
@@ -3071,16 +3285,16 @@ true_fit_multi_likert <- function(model,data,n,estimator,reps){
 
 #### multi-Factor: Function to combine both model fit stats for all levels into one dataframe ####
 
-multi_df_likert <- function(model,data,n,estimator,reps){
+multi_df_likert <- function(model,data,n,estimator,reps,robust=FALSE){
 
   #Use max sample size of 2000
   n <- min(n,2000)
 
   #Get fit stats for misspecified model
-  misspec_fit <- multi_fit_likert(model,data,n,estimator,reps)
+  misspec_fit <- multi_fit_likert(model,data,n,estimator,reps, robust=robust)
 
   #Get fit stats for correctly specified model
-  true_fit <- true_fit_multi_likert(model,data,n,estimator,reps)
+  true_fit <- true_fit_multi_likert(model,data,n,estimator,reps, robust=robust)
 
   #Produce final table by level
   Table <- purrr::map(misspec_fit,~cbind(.,true_fit))
@@ -3179,7 +3393,7 @@ data_likert <- function(model,data, n){
 
 
 #function for misspecified model
-multi_fit_likert2 <- function(model,data, n,estimator,reps){
+multi_fit_likert2 <- function(model,data, n,estimator,reps,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -3251,7 +3465,7 @@ multi_fit_likert2 <- function(model,data, n,estimator,reps){
 
   #model-implied correlation after discretization
   Miss_Cor <- purrr::map(misspec_dgm,~simstandard::get_model_implied_correlations(m=.,observed=TRUE,
-                                                                            latent=FALSE,errors=FALSE))
+                                                                                  latent=FALSE,errors=FALSE))
 
   #simulate ordinal data and add d4 to scale back to original metric
   set.seed(269854)
@@ -3271,7 +3485,7 @@ multi_fit_likert2 <- function(model,data, n,estimator,reps){
 
   #get model-implied correlation for misspecification on target matr
   #all_data_misspec <- purrr::map(misspec_dgm,~simstandard::sim_standardized(m=.,n=n*r,
-    #                                                                        latent=FALSE,errors=FALSE))
+  #                                                                        latent=FALSE,errors=FALSE))
 
   #n <- min(n,2000)
 
@@ -3279,41 +3493,41 @@ multi_fit_likert2 <- function(model,data, n,estimator,reps){
   #set.seed(269854)
 
   #Number of reps (default is 500 and shouldn't be changed by empirical researchers)
- # r <- reps
+  # r <- reps
 
   #all_data_misspec <- purrr::map(misspec_dgm,~simstandard::sim_standardized(m=.,n=n*r,
-      #                                                                      latent=FALSE,errors=FALSE))
+  #                                                                      latent=FALSE,errors=FALSE))
 
   #Grab data level of the list
   #data <- purrr::map(misspec_data,2)
 
   #loop through misspecifications
   #for (x in 1:length(misspec_dgm))
- # {
+  # {
   #  for (i in 1:ncol(dp))
-   # {# first loop transforms highest category
-    #  u<- as.numeric(sum(!is.na(dp[,i])))
-     # all_data_misspec[[x]]<-all_data_misspec[[x]] %>%
-      #  dplyr::mutate(!!a2[i] := case_when(
-       #   !!rlang::sym(a2[i])  <= dp[1,i] ~100,
-        #  !!rlang::sym(a2[i]) >   dp[u,i] ~100*(u+1),
-         # TRUE ~ !!rlang::sym(a2[i]))
-        #)
-      #second loop transforms all lower categories
-      #if(sum(!is.na(dp[,i])) > 1){
-       # for (j in 1:sum(!is.na(dp[,i]))) {
-        #  all_data_misspec[[x]]<-all_data_misspec[[x]] %>%
-         #   dplyr::mutate(!!a2[i] := case_when(
-          #    between( !!rlang::sym(a2[i]) , dp[j,i], dp[j+1,i]) ~ as.numeric(100*(j+1)),
-           #   TRUE~ !!rlang::sym(a2[i]))
-            #)
-        #}
-    #  }
+  # {# first loop transforms highest category
+  #  u<- as.numeric(sum(!is.na(dp[,i])))
+  # all_data_misspec[[x]]<-all_data_misspec[[x]] %>%
+  #  dplyr::mutate(!!a2[i] := case_when(
+  #   !!rlang::sym(a2[i])  <= dp[1,i] ~100,
+  #  !!rlang::sym(a2[i]) >   dp[u,i] ~100*(u+1),
+  # TRUE ~ !!rlang::sym(a2[i]))
+  #)
+  #second loop transforms all lower categories
+  #if(sum(!is.na(dp[,i])) > 1){
+  # for (j in 1:sum(!is.na(dp[,i]))) {
+  #  all_data_misspec[[x]]<-all_data_misspec[[x]] %>%
+  #   dplyr::mutate(!!a2[i] := case_when(
+  #    between( !!rlang::sym(a2[i]) , dp[j,i], dp[j+1,i]) ~ as.numeric(100*(j+1)),
+  #   TRUE~ !!rlang::sym(a2[i]))
+  #)
+  #}
   #  }
-    #loops multiply by 100 to avoid overwriting MVN data with values above 1
-    #divide by 100 to put things back onto Likert metric
-   # all_data_misspec[[x]]<-all_data_misspec[[x]]/100
- # }
+  #  }
+  #loops multiply by 100 to avoid overwriting MVN data with values above 1
+  #divide by 100 to put things back onto Likert metric
+  # all_data_misspec[[x]]<-all_data_misspec[[x]]/100
+  # }
 
   #Create indicator to split into 500 datasets for 500 reps
   rep_id_misspec <- rep(1:r,n)
@@ -3330,12 +3544,23 @@ multi_fit_likert2 <- function(model,data, n,estimator,reps){
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa for each element in the list
@@ -3365,7 +3590,7 @@ multi_fit_likert2 <- function(model,data, n,estimator,reps){
 
 ## Function for correct model
 
-true_fit_multi_likert2 <- function(model,data,n,estimator,reps){
+true_fit_multi_likert2 <- function(model,data,n,estimator,reps,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -3404,7 +3629,7 @@ true_fit_multi_likert2 <- function(model,data,n,estimator,reps){
   colnames(d4)<-colnames(data1)
   data1<-data1-d3
 
-    #create empty matrix for proportions in each category (g)
+  #create empty matrix for proportions in each category (g)
   #GenOrd requires list (p) for each item
   #t is thresholds for eventual discretization
   g<-matrix(nrow=(max(data1,na.rm=T)-min(data1, na.rm=T)), ncol=ncol(data1))
@@ -3426,7 +3651,7 @@ true_fit_multi_likert2 <- function(model,data,n,estimator,reps){
   #handle different number of categories per item
   p1<-list()
   for (x in 1:length(p)){
-  p1[[x]]<-p[[x]][!is.na(p[[x]])]
+    p1[[x]]<-p[[x]][!is.na(p[[x]])]
   }
 
   #Assign column names so it's clear which thresholds go with which variable
@@ -3464,25 +3689,25 @@ true_fit_multi_likert2 <- function(model,data,n,estimator,reps){
   #                                               latent = FALSE,
   #                                               errors = FALSE)
 
- # for (i in 1:ncol(dp))
- #  {# first loop transforms highest category
+  # for (i in 1:ncol(dp))
+  #  {# first loop transforms highest category
   #  u<- as.numeric(sum(!is.na(dp[,i])))
-   # all_data_true<-all_data_true %>%
-    #  dplyr::mutate(!!a2[i] := case_when(
-     #   !!rlang::sym(a2[i])  <= dp[1,i] ~100,
-      #  !!rlang::sym(a2[i]) >   dp[u,i] ~100*(u+1),
-       # TRUE ~ !!rlang::sym(a2[i]))
-      #)
-    #second loop transforms all lower categories
-    #if(sum(!is.na(dp[,i])) > 1){
-      #for (j in 1:sum(!is.na(dp[,i]))) {
-        #all_data_true<-all_data_true %>%
-          #dplyr::mutate(!!a2[i] := case_when(
-            #between( !!rlang::sym(a2[i]) , dp[j,i], dp[j+1,i]) ~ as.numeric(100*(j+1)),
-            #TRUE~ !!rlang::sym(a2[i]))
-          #)
-      #}
-    #}
+  # all_data_true<-all_data_true %>%
+  #  dplyr::mutate(!!a2[i] := case_when(
+  #   !!rlang::sym(a2[i])  <= dp[1,i] ~100,
+  #  !!rlang::sym(a2[i]) >   dp[u,i] ~100*(u+1),
+  # TRUE ~ !!rlang::sym(a2[i]))
+  #)
+  #second loop transforms all lower categories
+  #if(sum(!is.na(dp[,i])) > 1){
+  #for (j in 1:sum(!is.na(dp[,i]))) {
+  #all_data_true<-all_data_true %>%
+  #dplyr::mutate(!!a2[i] := case_when(
+  #between( !!rlang::sym(a2[i]) , dp[j,i], dp[j+1,i]) ~ as.numeric(100*(j+1)),
+  #TRUE~ !!rlang::sym(a2[i]))
+  #)
+  #}
+  #}
   #}
   #loops multiply by 100 to avoid overwriting MVN data with values above 1
   #divide by 100 to put things back onto Likert metric
@@ -3501,12 +3726,23 @@ true_fit_multi_likert2 <- function(model,data,n,estimator,reps){
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa
@@ -3529,16 +3765,16 @@ true_fit_multi_likert2 <- function(model,data,n,estimator,reps){
   return(true_fit_sum)
 }
 
-multi_df_likert2 <- function(model,data,n,estimator,reps){
+multi_df_likert2 <- function(model,data,n,estimator,reps,robust=FALSE){
 
   #Use max sample size of 2000
   n <- min(n,2000)
 
   #Get fit stats for misspecified model
-  misspec_fit <- multi_fit_likert2(model,data,n,estimator,reps)
+  misspec_fit <- multi_fit_likert2(model,data,n,estimator,reps, robust=robust)
 
   #Get fit stats for correctly specified model
-  true_fit <- true_fit_multi_likert2(model,data,n,estimator,reps)
+  true_fit <- true_fit_multi_likert2(model,data,n,estimator,reps, robust=robust)
 
   #Produce final table by level
   Table <- purrr::map(misspec_fit,~cbind(.,true_fit))
@@ -3639,7 +3875,7 @@ data_likert2 <- function(model,data,n){
 
 ### One-factor: Simulate fit indices for misspecified model for all levels ###
 
-one_fit_likert <- function(model,data,n,estimator,reps){
+one_fit_likert <- function(model,data,n,estimator,reps,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -3733,12 +3969,23 @@ one_fit_likert <- function(model,data,n,estimator,reps){
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa for each element in the list
@@ -3768,7 +4015,7 @@ one_fit_likert <- function(model,data,n,estimator,reps){
 
 #### One_Factor: Function to create True DGM (aka, just the model the user read in) ####
 
-true_fit_one_likert <- function(model,data,n,estimator,reps){
+true_fit_one_likert <- function(model,data,n,estimator,reps,robust=FALSE){
 
   #Get clean model equation
   mod <- cleanmodel(model)
@@ -3854,12 +4101,23 @@ true_fit_one_likert <- function(model,data,n,estimator,reps){
 
   #if using ULS or one of its variants, the following must be specified for standard errors: se="standard"
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("srmr","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("srmr","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("srmr","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("srmr", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("srmr", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("srmr", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("srmr","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("srmr","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("srmr","rmsea","cfi")
+    }
   }
 
   #Run 500 cfa
@@ -3885,16 +4143,16 @@ true_fit_one_likert <- function(model,data,n,estimator,reps){
 
 #### One-Factor: Function to combine both model fit stats for all levels into one dataframe ####
 
-one_df_likert <- function(model,data,n,estimator,reps){
+one_df_likert <- function(model,data,n,estimator,reps,robust=FALSE){
 
   #Use max sample size of 2000
   n <- min(n,2000)
 
   #Get fit stats for misspecified model
-  misspec_fit <- one_fit_likert(model,data,n,estimator,reps)
+  misspec_fit <- one_fit_likert(model,data,n,estimator,reps, robust=robust)
 
   #Get fit stats for correctly specified model
-  true_fit <- true_fit_one_likert(model,data,n,estimator,reps)
+  true_fit <- true_fit_one_likert(model,data,n,estimator,reps, robust=robust)
 
   #Produce final table by level
   Table <- purrr::map(misspec_fit,~cbind(.,true_fit))
@@ -3970,7 +4228,7 @@ rlkjcorr <- function (n, K, eta = 1) {
 #generates misspecified data
 #fits original model to misspecified data
 #collates fit indices into a data frame
-miss_fit <- function(model,data,n,reps,estimator,MAD,scale){
+miss_fit <- function(model,data,n,reps,estimator,MAD,scale,robust=FALSE){
 
   #strip estimates from model statement
   mod <- cleanmodel_3DFI(model)
@@ -4144,7 +4402,7 @@ miss_fit <- function(model,data,n,reps,estimator,MAD,scale){
 
         #add d3 back to put categorical items onto original scale
         if (!is.null(likertnames)){
-         d[,likertnames]<- d[,likertnames]+d3[,likertnames]
+          d[,likertnames]<- d[,likertnames]+d3[,likertnames]
         }
         #save data
         D[[i]]<-as.data.frame(d)
@@ -4165,7 +4423,7 @@ miss_fit <- function(model,data,n,reps,estimator,MAD,scale){
     }
   }
 
-    #if scale="categorical", use data to figure out which variables are discrete and what proportions should be
+  #if scale="categorical", use data to figure out which variables are discrete and what proportions should be
   if (scale %in% c("categorical")){
 
     mu=rep(0,l)
@@ -4310,12 +4568,23 @@ miss_fit <- function(model,data,n,reps,estimator,MAD,scale){
   # also skip calculating SEs to speed up simulations, if estimator allows for it
 
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("rmsea.ci.upper.scaled","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("rmsea.ci.upper.robust","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("rmsea.ci.upper","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("rmsea.ci.upper.scaled", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("rmsea.ci.upper.robust", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("rmsea.ci.upper", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("rmsea.ci.upper.scaled","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("rmsea.ci.upper.robust","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("rmsea.ci.upper","rmsea","cfi")
+    }
   }
 
   if((estimator=="ML" | estimator=="MLR") & scale %in% "nonnormal"){
@@ -4366,7 +4635,7 @@ miss_fit <- function(model,data,n,reps,estimator,MAD,scale){
 #fit orginal model to correct/consistent data
 #collated fit indices into a data frame
 
-true_fit<- function(model,data,n,reps, estimator, MAD,scale){
+true_fit<- function(model,data,n,reps, estimator, MAD,scale,robust=FALSE){
 
   #strip estimates from model statement
   mod <- cleanmodel_3DFI(model)
@@ -4574,12 +4843,23 @@ true_fit<- function(model,data,n,reps, estimator, MAD,scale){
   # use "estimator=" option to determine which type of fit index to track (standard, normal, scaled)
   # also skip calculating SEs to speed up simulations, if estimator allows for it
   se<-ifelse(startsWith(estimator,"ULS"),"standard","none")
-  if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
-    ind<-c("rmsea.ci.upper.scaled","rmsea.scaled","cfi.scaled")
-  } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
-    ind<-c("rmsea.ci.upper.robust","rmsea.robust","cfi.robust")
-  }  else {
-    ind<-c("rmsea.ci.upper","rmsea","cfi")
+  if (!is.null(robust) && robust == TRUE) {
+    if(endsWith(estimator,"MVS") || estimator == "MLMV") {
+      ind <- c("rmsea.ci.upper.scaled", "rmsea.scaled", "cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R") | endsWith(estimator,"V")) {
+      ind <- c("rmsea.ci.upper.robust", "rmsea.robust", "cfi.robust")
+    }  else {
+      ind <- c("rmsea.ci.upper", "rmsea", "cfi")
+    }
+
+  } else {
+    if(endsWith(estimator,"MVS") | endsWith(estimator,"V")) {
+      ind<-c("rmsea.ci.upper.scaled","rmsea.scaled","cfi.scaled")
+    } else if(endsWith(estimator,"M") | endsWith(estimator,"R")) {
+      ind<-c("rmsea.ci.upper.robust","rmsea.robust","cfi.robust")
+    }  else {
+      ind<-c("rmsea.ci.upper","rmsea","cfi")
+    }
   }
 
   if((estimator=="ML" | estimator=="MLR") & scale %in% "nonnormal"){
@@ -4626,16 +4906,16 @@ true_fit<- function(model,data,n,reps, estimator, MAD,scale){
 
 #Function to combine all indices into one dataframe
 #Will used to created distributions that determine optimal cutoff
-combined <- function(model,data,n,reps,estimator,MAD,scale){
+combined <- function(model,data,n,reps,estimator,MAD,scale,robust=FALSE){
 
   #Use max sample size of 5000
   n <- n
 
   #apply function for simulated misspecified data
-  misspec_fit <- miss_fit(model,data,n,reps,estimator,MAD,scale)
+  misspec_fit <- miss_fit(model,data,n,reps,estimator,MAD,scale, robust=robust)
 
   #apply function for simulatied correct data
-  true_fit <- true_fit(model,data,n,reps,estimator,MAD,scale)
+  true_fit <- true_fit(model,data,n,reps,estimator,MAD,scale, robust=robust)
 
   #Produce final table by level
   Table <- purrr::map(misspec_fit$misspec_fit_sum,~cbind(.,true_fit$true_fit_sum))

@@ -11,7 +11,8 @@ catHB(
   plot = FALSE,
   manual = FALSE,
   reps = 250,
-  estimator = "WLSMV"
+  estimator = "WLSMV",
+  robust = FALSE
 )
 
 \method{print}{catHB}(x, ...)
@@ -31,7 +32,13 @@ If you manually entered standardized loadings and sample size, set this to TRUE.
 \item{reps}{The number of replications used in your simulation. This is set to 500 by default in both the
 R package and the corresponding Shiny App.}
 
-\item{estimator}{Which estimator to use within the simulations (enter in quotes). The default is WLSMV. Only limited-information estimators that produce fit indices are permitted (i.e., maximum likelihood is not available)}
+\item{estimator}{Which estimator to use within the simulations (enter in quotes). The default is WLSMV. Only limited-information estimators that produce fit indices are permitted (i.e., maximum likelihood is not available).}
+
+\item{robust}{A logical flag. When set to \code{TRUE}, the function will extract and report the \code{.robust}
+fit indices (e.g., \code{rmsea.robust}, \code{cfi.robust}) from \code{lavaan} simulations. This is highly recommended
+when using the \code{WLSMV} estimator to ensure the use of appropriate fit statistics corrected for non-normality,
+as justified by the work of Brosseau-Liard, Savalei, & Li (2012) and Brosseau-Liard & Savalei (2014).
+When \code{FALSE} (the default), the function retains its original behavior, which may report \code{.scaled} fit indices for certain estimators.}
 
 \item{x}{catHB object}
 
@@ -57,9 +64,14 @@ m1<-"
  F1~~F2"
 
  #fit the model in lavaan, treating items are categorical
- fit<-lavaan::cfa(m1, data=Example, ordered=TRUE)
+ fit<-lavaan::cfa(m1, data=Example, ordered=TRUE, estimator="WLSMV")
 
+# Original behavior (robust=FALSE)
 \donttest{catHB(fit)}
+
+# Recommended behavior for WLSMV (robust=TRUE)
+# This will produce different DFI cutoffs and empirical fit indices
+\donttest{catHB(fit, robust=TRUE)}
 
 #Manual entry example (manual=TRUE)
 
@@ -70,17 +82,10 @@ m1<-"
  F1~~F2"
 
  #fit the model, treating items are categorical
- #lavaan is used here to shown where estimates come from
- #but manual entry supports standardized estimates from models fit in any software
+ #lavaan is used here to show where estimates come from
 
  fit<-lavaan::cfa(m1, data=Example, ordered=TRUE)
  lavaan::standardizedsolution(fit)
-
-#thresholds go in model statement as
-  #(a)categorical item name
-  #(b) vertical pipe
-  #(c) estimate
-  #(d)times t+threshold number
 
 manual_model <-"F1=~.448*X1 + .557*X2 + .770*X3
  F2=~.612*X6 + .684*X7 + .736*X8 + .365*X12
@@ -122,6 +127,11 @@ X12 | 0.900*t3
 X12 | 1.392*t4"
 \donttest{catHB(model=manual_model,n=500,manual=TRUE)}
 
+}
+\references{
+Brosseau-Liard, P. E., Savalei, V., & Li, L. (2012). An Investigation of the Sample Performance of Two Nonnormality Corrections for RMSEA. \emph{Multivariate Behavioral Research}, 47(6), 904-930.
+
+Brosseau-Liard, P. E., & Savalei, V. (2014). Adjusting Incremental Fit Indices for Nonnormality. \emph{Multivariate Behavioral Research}, 49(5), 460-470.
 }
 \author{
 Daniel McNeish & Melissa G Wolf
