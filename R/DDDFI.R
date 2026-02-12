@@ -194,11 +194,11 @@ res <- list()
 #if input is lavaan object, extract the fit indices for the fitted model
 #lots of code here because fit indices are stored in a different location/under a different name depending on the estimator/correction
 if(!manual){
-  if (model@Options$test=="satorra.bentler" |model@Options$test=="yuan.bentler.mplus" | model@Options$test=="yuan.bentler.mplus"){
+  if (tail(model@Options$test,1)=="satorra.bentler" |tail(model@Options$test,1)=="yuan.bentler.mplus" | tail(model@Options$test,1)=="yuan.bentler.mplus"){
     fitted <- round(lavaan::fitmeasures(model,c("chisq.scaled","df","pvalue.scaled","srmr","cfi.robust", "rmsea.robust","rmsea.ci.upper.robust")),3)
-  } else if (model@Options$test=="scaled.shifted" | model@Options$test=="mean.var.adjusted"){
+  } else if (tail(model@Options$test,1)=="scaled.shifted" | tail(model@Options$test,1)=="mean.var.adjusted"){
     fitted <- round(lavaan::fitmeasures(model,c("chisq.scaled","df","pvalue.scaled","srmr","cfi.scaled", "rmsea.scaled","rmsea.ci.upper.scaled")),3)
-  } else if(model@Options$test=="standard" ){
+  } else if(tail(model@Options$test,1)=="standard" ){
     fitted <- round(lavaan::fitmeasures(model,c("chisq","df","pvalue","srmr","cfi", "rmsea","rmsea.ci.upper")),3)}
   fitted_m <- as.matrix(fitted)
   fitted_t <- t(fitted_m)
