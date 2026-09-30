@@ -2167,7 +2167,7 @@ true_fit_one_cat <- function(model,n,reps, threshold, estimator){
   #Run 500 cfa
   #added ORDERED = to treat items as categorical
   #also added options to suppress common warnings
-  true_cfa <- purrr::map(true_data$data,function(x) lavaan::cfa(model = mod, data=x, std.lv=TRUE, ordered=clist, estimator=estimator, std.lv=TRUE, se=se,
+  true_cfa <- purrr::map(true_data$data,function(x) lavaan::cfa(model = mod, data=x, std.lv=TRUE, ordered=clist, estimator=estimator, se=se,
                                                                 check.gradient=FALSE,
                                                                 check.post=FALSE,
                                                                 check.vcov=FALSE,control=list(rel.tol=.001)))
